@@ -18,7 +18,7 @@ const dropAnimation: DropAnimation = {
 };
 
 const KanbanBoard: React.FC = () => {
-    const { filteredLeads, updateLeadStatus } = useLeads();
+    const { filteredLeads, updateLeadStatus, reorderLeads } = useLeads();
     const [activeLead, setActiveLead] = useState<Lead | null>(null);
 
     const sensors = useSensors(
@@ -37,8 +37,8 @@ const KanbanBoard: React.FC = () => {
     }
 
     const handleDragEnd = (event: DragEndEvent) => {
-        setActiveLead(null);
         const { active, over } = event;
+        setActiveLead(null);
 
         if (!over || active.id === over.id) {
             return;
@@ -46,14 +46,26 @@ const KanbanBoard: React.FC = () => {
 
         const activeId = String(active.id);
         const overId = String(over.id);
-
-        const activeContainer = active.data.current?.sortable.containerId;
-        const overContainer = over.data.current?.sortable?.containerId || overId;
         
-        const isDroppingOnColumn = KANBAN_COLUMNS.some(c => c.id === overContainer);
+        const activeContainer = active.data.current?.sortable.containerId as LeadStatus;
+        const overIsAColumn = KANBAN_COLUMNS.some(c => c.id === overId);
+        const overContainer = overIsAColumn 
+            ? overId as LeadStatus 
+            : over.data.current?.sortable.containerId as LeadStatus;
 
-        if (isDroppingOnColumn && activeContainer !== overContainer) {
-            updateLeadStatus(activeId, overContainer as LeadStatus);
+        if (!activeContainer || !overContainer) {
+            return;
+        }
+        
+        // Handle reordering within the same column or moving to a new column
+        if (activeContainer === overContainer) {
+             if (!overIsAColumn) {
+                // Reorder leads in the same column
+                reorderLeads(activeId, overId);
+             }
+        } else {
+            // Move lead to a new column (new status)
+            updateLeadStatus(activeId, overContainer);
         }
     };
 

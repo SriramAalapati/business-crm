@@ -16,9 +16,9 @@ const Layout: React.FC = () => {
   return (
     <div className="flex h-screen bg-gray-100 dark:bg-gray-900 text-gray-800 dark:text-gray-200">
       <Sidebar isOpen={isSidebarOpen} setIsOpen={setSidebarOpen} />
-      <div className={`flex flex-col flex-1 transition-all duration-300 ${isSidebarOpen ? 'ml-64' : 'ml-20'} overflow-hidden`}>
+      <div className="flex-1 flex flex-col overflow-hidden">
         <TopBar />
-        <main className="flex-1 overflow-y-auto p-6">
+        <main className="flex-1 overflow-x-hidden overflow-y-auto p-6">
           <Outlet />
         </main>
       </div>

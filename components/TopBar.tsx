@@ -63,8 +63,12 @@ const TopBar: React.FC = () => {
   const showSuggestions = isSearchFocused && location.pathname === '/leads';
 
   return (
-    <header className="flex items-center justify-between h-16 px-6 bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 flex-shrink-0">
-      <div className="flex items-center">
+    <header className="flex items-center h-16 px-6 bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 flex-shrink-0">
+      {/* Left side spacer */}
+      <div className="flex-1"></div>
+
+      {/* Center Search */}
+      <div className="flex justify-center">
         {location.pathname === '/leads' && (
           <div className="relative" ref={searchContainerRef}>
             <div className="relative">
@@ -75,7 +79,7 @@ const TopBar: React.FC = () => {
                   value={localSearch}
                   onChange={handleSearchChange}
                   onFocus={() => setSearchFocused(true)}
-                  className="pl-10 pr-4 py-2 w-64 text-sm text-gray-700 bg-gray-100 dark:bg-gray-700 dark:text-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
+                  className="pl-10 pr-4 py-2 w-80 text-sm text-gray-700 bg-gray-100 dark:bg-gray-700 dark:text-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
                 />
             </div>
             {showSuggestions && (
@@ -122,7 +126,8 @@ const TopBar: React.FC = () => {
         )}
       </div>
 
-      <div className="flex items-center gap-4">
+      {/* Right side controls */}
+      <div className="flex-1 flex items-center justify-end gap-2">
         <div className="flex items-center gap-1">
             <button onClick={toggleTheme} className="p-2 rounded-full hover:bg-gray-200 dark:hover:bg-gray-700 text-gray-500 dark:text-gray-400">
               {theme === 'light' ? <FiMoon className="w-6 h-6" /> : <FiSun className="w-6 h-6" />}
@@ -143,7 +148,7 @@ const TopBar: React.FC = () => {
             <img src={user?.avatar} alt={user?.name} className="w-10 h-10 rounded-full" />
             <div className="text-left hidden md:block">
               <p className="font-semibold text-sm">{user?.name}</p>
-              <p className="text-xs text-gray-500 dark:text-gray-400">{user?.role}</p>
+              <p className="text-xs text-gray-500 dark:text-gray-400 capitalize">{user?.role}</p>
             </div>
           </button>
           {isMenuOpen && (
