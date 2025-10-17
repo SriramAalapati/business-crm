@@ -1,29 +1,27 @@
-
 import React from 'react';
-import { useSortable } from '@dnd-kit/sortable';
-import { CSS } from '@dnd-kit/utilities';
 import { Lead } from '../../types';
 import { FiDollarSign, FiBriefcase } from 'react-icons/fi';
 
-interface LeadCardProps {
+interface LeadCardProps extends React.HTMLAttributes<HTMLDivElement> {
     lead: Lead;
+    isDragging?: boolean;
+    isOverlay?: boolean;
 }
 
-const LeadCard: React.FC<LeadCardProps> = ({ lead }) => {
-    const { attributes, listeners, setNodeRef, transform, transition } = useSortable({ id: lead.id });
-
-    const style = {
-        transform: CSS.Transform.toString(transform),
-        transition,
-    };
+const LeadCard = React.forwardRef<HTMLDivElement, LeadCardProps>(
+  ({ lead, isDragging, isOverlay, style, ...props }, ref) => {
+    const finalClassName = [
+      'bg-white dark:bg-gray-700 p-4 rounded-lg shadow-md border-l-4 border-primary-500 transition-opacity',
+      isOverlay ? 'cursor-grabbing shadow-2xl ring-2 ring-primary-500/50' : 'cursor-grab active:cursor-grabbing',
+      isDragging ? 'opacity-30' : ''
+    ].join(' ');
 
     return (
         <div
-            ref={setNodeRef}
+            ref={ref}
             style={style}
-            {...attributes}
-            {...listeners}
-            className="bg-white dark:bg-gray-700 p-4 rounded-lg shadow-md cursor-grab active:cursor-grabbing border-l-4 border-primary-500"
+            {...props}
+            className={finalClassName}
         >
             <div className="flex justify-between items-start">
                 <h4 className="font-bold text-gray-800 dark:text-white">{lead.name}</h4>
@@ -39,6 +37,6 @@ const LeadCard: React.FC<LeadCardProps> = ({ lead }) => {
             </p>
         </div>
     );
-};
+});
 
 export default LeadCard;

@@ -1,4 +1,3 @@
-
 import React, { useState, useRef, useEffect } from 'react';
 import { FiSearch, FiBell, FiSun, FiMoon, FiLogOut } from 'react-icons/fi';
 import { useUser } from '../contexts/UserContext';
@@ -47,7 +46,7 @@ const TopBar: React.FC = () => {
   }, []);
 
   return (
-    <header className="flex items-center justify-between h-16 px-6 bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700">
+    <header className="flex items-center justify-between h-16 px-6 bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 flex-shrink-0">
       <div className="flex items-center">
         {location.pathname === '/leads' && (
           <div className="relative">
@@ -63,14 +62,21 @@ const TopBar: React.FC = () => {
         )}
       </div>
 
-      <div className="flex items-center space-x-4">
-        <button onClick={toggleTheme} className="p-2 rounded-full hover:bg-gray-200 dark:hover:bg-gray-700 text-gray-500 dark:text-gray-400">
-          {theme === 'light' ? <FiMoon className="w-6 h-6" /> : <FiSun className="w-6 h-6" />}
-        </button>
-        <button className="p-2 rounded-full hover:bg-gray-200 dark:hover:bg-gray-700 text-gray-500 dark:text-gray-400 relative">
-          <FiBell className="w-6 h-6" />
-          <span className="absolute top-1 right-1 block w-2 h-2 bg-red-500 rounded-full"></span>
-        </button>
+      <div className="flex items-center gap-4">
+        <div className="flex items-center gap-1">
+            <button onClick={toggleTheme} className="p-2 rounded-full hover:bg-gray-200 dark:hover:bg-gray-700 text-gray-500 dark:text-gray-400">
+              {theme === 'light' ? <FiMoon className="w-6 h-6" /> : <FiSun className="w-6 h-6" />}
+            </button>
+            <button className="p-2 rounded-full hover:bg-gray-200 dark:hover:bg-gray-700 text-gray-500 dark:text-gray-400 relative">
+              <FiBell className="w-6 h-6" />
+              <span className="absolute top-1 right-1 block w-2 h-2 bg-red-500 rounded-full"></span>
+            </button>
+            <button onClick={signOut} title="Sign Out" className="p-2 rounded-full hover:bg-gray-200 dark:hover:bg-gray-700 text-gray-500 dark:text-gray-400">
+                <FiLogOut className="w-6 h-6" />
+            </button>
+        </div>
+
+        <div className="h-8 w-px bg-gray-200 dark:bg-gray-700"></div>
 
         <div className="relative" ref={menuRef}>
           <button onClick={() => setMenuOpen(!isMenuOpen)} className="flex items-center space-x-2">
