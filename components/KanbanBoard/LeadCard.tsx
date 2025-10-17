@@ -11,9 +11,9 @@ interface LeadCardProps extends React.HTMLAttributes<HTMLDivElement> {
 const LeadCard = React.forwardRef<HTMLDivElement, LeadCardProps>(
   ({ lead, isDragging, isOverlay, style, ...props }, ref) => {
     const finalClassName = [
-      'bg-white dark:bg-gray-700 p-4 rounded-lg shadow-md border-l-4 border-primary-500 transition-opacity',
+      'bg-white dark:bg-gray-700 p-4 rounded-lg shadow-md border-l-4 border-primary-500 transition-all duration-200',
       isOverlay ? 'cursor-grabbing shadow-2xl ring-2 ring-primary-500/50' : 'cursor-grab active:cursor-grabbing',
-      isDragging ? 'opacity-30' : ''
+      isDragging ? 'opacity-0' : 'opacity-100'
     ].join(' ');
 
     return (

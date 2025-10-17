@@ -1,5 +1,4 @@
-
-import React, { createContext, useState, useContext, ReactNode, useMemo } from 'react';
+import React, { createContext, useState, useContext, ReactNode, useMemo, useEffect } from 'react';
 import { Lead, LeadStatus } from '../types';
 import { INITIAL_LEADS } from '../constants';
 
@@ -9,6 +8,8 @@ interface LeadsContextType {
   filteredLeads: Lead[];
   setSearchTerm: (term: string) => void;
   searchTerm: string;
+  recentSearches: string[];
+  addRecentSearch: (term: string) => void;
 }
 
 const LeadsContext = createContext<LeadsContextType | undefined>(undefined);
@@ -16,6 +17,33 @@ const LeadsContext = createContext<LeadsContextType | undefined>(undefined);
 export const LeadsProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
   const [leads, setLeads] = useState<Lead[]>(INITIAL_LEADS);
   const [searchTerm, setSearchTerm] = useState('');
+  const [recentSearches, setRecentSearches] = useState<string[]>(() => {
+    try {
+      const item = window.localStorage.getItem('recentSearches');
+      return item ? JSON.parse(item) : [];
+    } catch (error) {
+      console.error(error);
+      return [];
+    }
+  });
+
+  useEffect(() => {
+    try {
+      window.localStorage.setItem('recentSearches', JSON.stringify(recentSearches));
+    } catch (error) {
+      console.error(error);
+    }
+  }, [recentSearches]);
+
+  const addRecentSearch = (term: string) => {
+    if (!term || term.trim() === '') return;
+    setRecentSearches(prev => {
+      const lowerCaseTerm = term.toLowerCase();
+      const filtered = prev.filter(t => t.toLowerCase() !== lowerCaseTerm);
+      const newSearches = [term, ...filtered];
+      return newSearches.slice(0, 5); // Keep last 5 searches
+    });
+  };
 
   const updateLeadStatus = (leadId: string, newStatus: LeadStatus) => {
     setLeads((prevLeads) =>
@@ -35,7 +63,7 @@ export const LeadsProvider: React.FC<{ children: ReactNode }> = ({ children }) =
   }, [leads, searchTerm]);
 
   return (
-    <LeadsContext.Provider value={{ leads, updateLeadStatus, filteredLeads, setSearchTerm, searchTerm }}>
+    <LeadsContext.Provider value={{ leads, updateLeadStatus, filteredLeads, setSearchTerm, searchTerm, recentSearches, addRecentSearch }}>
       {children}
     </LeadsContext.Provider>
   );

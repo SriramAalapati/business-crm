@@ -53,24 +53,37 @@ const Calendar: React.FC = () => {
     }
   };
 
-  // This is a workaround to apply dark mode styles to FullCalendar
+  // Dynamically injects styles for FullCalendar based on theme and selected calendar view.
   React.useEffect(() => {
+    const teamLight = { primary: '#3b82f6', hover: '#2563eb', today: 'rgba(59, 130, 246, 0.1)' };
+    const teamDark = { primary: '#374151', hover: '#4b5563', today: 'rgba(59, 130, 246, 0.2)' };
+    const personalLight = { primary: '#10B981', hover: '#059669', today: 'rgba(16, 185, 129, 0.1)' };
+    const personalDark = { primary: '#065f46', hover: '#047857', today: 'rgba(16, 185, 129, 0.2)' };
+
+    let colors;
+    if (calendarView === 'team') {
+      colors = theme === 'dark' ? teamDark : teamLight;
+    } else {
+      colors = theme === 'dark' ? personalDark : personalLight;
+    }
+
     const style = document.createElement('style');
+    style.id = 'fullcalendar-dynamic-styles';
     style.textContent = `
       .fc .fc-button-primary {
-        background-color: ${theme === 'dark' ? '#374151' : '#3b82f6'};
-        border-color: ${theme === 'dark' ? '#374151' : '#3b82f6'};
+        background-color: ${colors.primary} !important;
+        border-color: ${colors.primary} !important;
       }
        .fc .fc-button-primary:not(:disabled).fc-button-active, .fc .fc-button-primary:not(:disabled):active {
-        background-color: ${theme === 'dark' ? '#4b5563' : '#2563eb'} !important;
-        border-color: ${theme === 'dark' ? '#4b5563' : '#2563eb'} !important;
+        background-color: ${colors.hover} !important;
+        border-color: ${colors.hover} !important;
       }
       .fc .fc-button-primary:hover {
-        background-color: ${theme === 'dark' ? '#4b5563' : '#2563eb'};
-        border-color: ${theme === 'dark' ? '#4b5563' : '#2563eb'};
+        background-color: ${colors.hover} !important;
+        border-color: ${colors.hover} !important;
       }
       .fc .fc-daygrid-day.fc-day-today {
-        background-color: ${theme === 'dark' ? 'rgba(59, 130, 246, 0.2)' : 'rgba(59, 130, 246, 0.1)'};
+        background-color: ${colors.today} !important;
       }
       .fc-theme-standard .fc-list-day-cushion {
         background-color: ${theme === 'dark' ? '#1f2937': '#f3f4f6'};
@@ -78,12 +91,27 @@ const Calendar: React.FC = () => {
       .fc-event-main-frame {
         color: white !important;
       }
+      .fc-toolbar-title {
+        color: ${colors.primary};
+        transition: color 0.3s ease-in-out;
+      }
     `;
+    
+    // Remove old style tag before adding new one to prevent style conflicts
+    const oldStyle = document.getElementById('fullcalendar-dynamic-styles');
+    if (oldStyle) {
+      oldStyle.remove();
+    }
+    
     document.head.appendChild(style);
+
     return () => {
-      document.head.removeChild(style);
+      const styleElement = document.getElementById('fullcalendar-dynamic-styles');
+      if (styleElement) {
+        styleElement.remove();
+      }
     };
-  }, [theme]);
+  }, [theme, calendarView]);
 
   const buttonBaseClass = "font-bold py-2 px-4 rounded-lg transition-colors";
   const activeBtnClass = "bg-primary-500 text-white";

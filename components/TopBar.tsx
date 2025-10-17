@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { FiSearch, FiBell, FiSun, FiMoon, FiLogOut } from 'react-icons/fi';
+import { FiSearch, FiBell, FiSun, FiMoon, FiLogOut, FiBriefcase, FiClock } from 'react-icons/fi';
 import { useUser } from '../contexts/UserContext';
 import { useTheme } from '../contexts/ThemeContext';
 import { useLeads } from '../contexts/LeadsContext';
@@ -9,9 +9,13 @@ import useDebounce from '../hooks/useDebounce';
 const TopBar: React.FC = () => {
   const { user, signOut } = useUser();
   const { theme, toggleTheme } = useTheme();
-  const { setSearchTerm, searchTerm } = useLeads();
+  const { setSearchTerm, searchTerm, filteredLeads, recentSearches, addRecentSearch } = useLeads();
   const [isMenuOpen, setMenuOpen] = useState(false);
+  const [isSearchFocused, setSearchFocused] = useState(false);
+  
   const menuRef = useRef<HTMLDivElement>(null);
+  const searchContainerRef = useRef<HTMLDivElement>(null);
+
   const location = useLocation();
 
   const [localSearch, setLocalSearch] = useState(searchTerm);
@@ -19,13 +23,16 @@ const TopBar: React.FC = () => {
 
   useEffect(() => {
       setSearchTerm(debouncedSearch);
-  }, [debouncedSearch, setSearchTerm]);
+      if (debouncedSearch) {
+        addRecentSearch(debouncedSearch);
+      }
+  }, [debouncedSearch, setSearchTerm, addRecentSearch]);
 
   useEffect(() => {
-    // Clear search when navigating away from leads page
     if (location.pathname !== '/leads') {
       setLocalSearch('');
       setSearchTerm('');
+      setSearchFocused(false);
     }
   }, [location.pathname, setSearchTerm]);
 
@@ -38,6 +45,9 @@ const TopBar: React.FC = () => {
       if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
         setMenuOpen(false);
       }
+      if (searchContainerRef.current && !searchContainerRef.current.contains(event.target as Node)) {
+        setSearchFocused(false);
+      }
     };
     document.addEventListener('mousedown', handleClickOutside);
     return () => {
@@ -45,19 +55,69 @@ const TopBar: React.FC = () => {
     };
   }, []);
 
+  const handleSuggestionClick = (text: string) => {
+    setLocalSearch(text);
+    setSearchFocused(false);
+  }
+
+  const showSuggestions = isSearchFocused && location.pathname === '/leads';
+
   return (
     <header className="flex items-center justify-between h-16 px-6 bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 flex-shrink-0">
       <div className="flex items-center">
         {location.pathname === '/leads' && (
-          <div className="relative">
-            <FiSearch className="absolute w-5 h-5 text-gray-400 top-1/2 left-3 -translate-y-1/2" />
-            <input
-              type="text"
-              placeholder="Search leads..."
-              value={localSearch}
-              onChange={handleSearchChange}
-              className="pl-10 pr-4 py-2 w-64 text-sm text-gray-700 bg-gray-100 dark:bg-gray-700 dark:text-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
-            />
+          <div className="relative" ref={searchContainerRef}>
+            <div className="relative">
+                <FiSearch className="absolute w-5 h-5 text-gray-400 top-1/2 left-3 -translate-y-1/2" />
+                <input
+                  type="text"
+                  placeholder="Search leads..."
+                  value={localSearch}
+                  onChange={handleSearchChange}
+                  onFocus={() => setSearchFocused(true)}
+                  className="pl-10 pr-4 py-2 w-64 text-sm text-gray-700 bg-gray-100 dark:bg-gray-700 dark:text-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
+                />
+            </div>
+            {showSuggestions && (
+                <div className="absolute top-full mt-2 w-80 bg-white dark:bg-gray-800 rounded-md shadow-lg z-20 border border-gray-200 dark:border-gray-700 overflow-hidden">
+                    {localSearch.length > 0 ? (
+                        <>
+                            <h3 className="text-xs font-semibold uppercase text-gray-400 px-4 py-2">Suggestions</h3>
+                            {filteredLeads.length > 0 ? (
+                                <ul>
+                                    {filteredLeads.slice(0, 5).map(lead => (
+                                        <li key={lead.id} onClick={() => handleSuggestionClick(lead.name)} className="flex items-center px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-700 cursor-pointer">
+                                            <img src={lead.avatar} alt={lead.name} className="w-8 h-8 rounded-full mr-3" />
+                                            <div>
+                                                <p className="text-sm font-medium text-gray-800 dark:text-gray-200">{lead.name}</p>
+                                                <p className="text-xs text-gray-500 dark:text-gray-400 flex items-center"><FiBriefcase className="w-3 h-3 mr-1"/>{lead.company}</p>
+                                            </div>
+                                        </li>
+                                    ))}
+                                </ul>
+                            ) : (
+                                <p className="text-sm text-gray-500 px-4 py-3">No results found.</p>
+                            )}
+                        </>
+                    ) : (
+                        <>
+                            <h3 className="text-xs font-semibold uppercase text-gray-400 px-4 py-2">Recent Searches</h3>
+                            {recentSearches.length > 0 ? (
+                                <ul>
+                                    {recentSearches.map((term, index) => (
+                                        <li key={index} onClick={() => handleSuggestionClick(term)} className="flex items-center px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-700 cursor-pointer">
+                                            <FiClock className="w-4 h-4 mr-3 text-gray-400" />
+                                            <p className="text-sm text-gray-700 dark:text-gray-300">{term}</p>
+                                        </li>
+                                    ))}
+                                </ul>
+                            ) : (
+                                <p className="text-sm text-gray-500 px-4 py-3">No recent searches.</p>
+                            )}
+                        </>
+                    )}
+                </div>
+            )}
           </div>
         )}
       </div>

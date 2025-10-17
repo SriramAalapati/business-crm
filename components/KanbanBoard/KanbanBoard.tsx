@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { DndContext, closestCenter, KeyboardSensor, PointerSensor, useSensor, useSensors, DragEndEvent, DragStartEvent, DragOverlay } from '@dnd-kit/core';
+import { DndContext, closestCenter, KeyboardSensor, PointerSensor, useSensor, useSensors, DragEndEvent, DragStartEvent, DragOverlay, DropAnimation, defaultDropAnimationSideEffects } from '@dnd-kit/core';
 import { sortableKeyboardCoordinates } from '@dnd-kit/sortable';
 import { useLeads } from '../../contexts/LeadsContext';
 import { KANBAN_COLUMNS } from '../../constants';
@@ -7,6 +7,15 @@ import Column from './Column';
 import { Lead, LeadStatus } from '../../types';
 import LeadCard from './LeadCard';
 
+const dropAnimation: DropAnimation = {
+    sideEffects: defaultDropAnimationSideEffects({
+        styles: {
+            active: {
+                opacity: '0.5',
+            },
+        },
+    }),
+};
 
 const KanbanBoard: React.FC = () => {
     const { filteredLeads, updateLeadStatus } = useLeads();
@@ -60,7 +69,7 @@ const KanbanBoard: React.FC = () => {
                     const leadsInColumn = filteredLeads.filter(lead => lead.status === column.id);
                     return <Column key={column.id} id={column.id} title={column.title} leads={leadsInColumn} />;
                 })}
-                <DragOverlay>
+                <DragOverlay dropAnimation={dropAnimation}>
                     {activeLead ? <LeadCard lead={activeLead} isOverlay /> : null}
                 </DragOverlay>
             </DndContext>
