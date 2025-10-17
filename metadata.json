@@ -1,0 +1,5 @@
+{
+  "name": "Gemini CRM Pro",
+  "description": "A comprehensive CRM dashboard application for managing leads, team calendars, and user details, built with React, TypeScript, and Tailwind CSS. Features a drag-and-drop Kanban board for lead management and a centralized team calendar.",
+  "requestFramePermissions": []
+}
