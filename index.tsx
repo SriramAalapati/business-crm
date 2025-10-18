@@ -1,10 +1,10 @@
-
 import React from 'react';
 import ReactDOM from 'react-dom/client';
 import App from './App';
 import { ThemeProvider } from './contexts/ThemeContext';
 import { UserProvider } from './contexts/UserContext';
 import { LeadsProvider } from './contexts/LeadsContext';
+import { ToastProvider } from './contexts/ToastContext';
 
 const rootElement = document.getElementById('root');
 if (!rootElement) {
@@ -16,9 +16,11 @@ root.render(
   <React.StrictMode>
     <ThemeProvider>
       <UserProvider>
-        <LeadsProvider>
-          <App />
-        </LeadsProvider>
+        <ToastProvider>
+          <LeadsProvider>
+            <App />
+          </LeadsProvider>
+        </ToastProvider>
       </UserProvider>
     </ThemeProvider>
   </React.StrictMode>

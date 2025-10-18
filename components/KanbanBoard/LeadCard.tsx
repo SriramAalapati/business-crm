@@ -1,6 +1,6 @@
 import React from 'react';
 import { Lead, Priority } from '../../types';
-import { FiBriefcase, FiTrash2, FiEdit2, FiFlag, FiEye } from 'react-icons/fi';
+import { FiBriefcase, FiTrash2, FiEdit2, FiFlag, FiEye, FiDollarSign, FiUser, FiCalendar } from 'react-icons/fi';
 import { useLeads } from '../../contexts/LeadsContext';
 
 interface LeadCardProps extends React.HTMLAttributes<HTMLDivElement> {
@@ -64,15 +64,29 @@ const LeadCard = React.forwardRef<HTMLDivElement, LeadCardProps>(
                 </button>
             </div>
 
-            <div className="flex justify-between items-start">
-                <h4 className="font-bold text-gray-800 dark:text-white pr-12">{lead.name}</h4>
-                <img src={lead.avatar} alt={lead.name} className="w-8 h-8 rounded-full" />
+            <div className="flex justify-between items-start mb-2">
+                <h4 className="font-bold text-gray-800 dark:text-white pr-4 flex-1">{lead.name}</h4>
+                <div className="text-sm font-semibold text-primary-600 dark:text-primary-400 flex items-center flex-shrink-0">
+                    <FiDollarSign className="w-4 h-4 mr-1"/>
+                    <span>{lead.dealValue.toLocaleString('en-IN')}</span>
+                </div>
             </div>
-            <p className="text-sm text-gray-500 dark:text-gray-400 flex items-center mt-1">
+
+            <p className="text-sm text-gray-500 dark:text-gray-400 flex items-center mb-3">
                 <FiBriefcase className="w-4 h-4 mr-2" />
                 {lead.company}
             </p>
-            <p className={`text-sm font-semibold flex items-center mt-2 ${priorityStyle.text}`}>
+
+            <div className="border-t border-gray-200 dark:border-gray-600 pt-2 text-xs text-gray-500 dark:text-gray-400 space-y-1.5">
+                 <p className="flex items-center">
+                    <FiUser className="w-3.5 h-3.5 mr-2" /> Assigned to: <span className="font-medium text-gray-700 dark:text-gray-300 ml-1">{lead.assignedTo}</span>
+                </p>
+                {lead.followUpDate && <p className="flex items-center">
+                    <FiCalendar className="w-3.5 h-3.5 mr-2" /> Follow-up: <span className="font-medium text-gray-700 dark:text-gray-300 ml-1">{new Date(lead.followUpDate).toLocaleDateString()}</span>
+                </p>}
+            </div>
+
+            <p className={`text-sm font-semibold flex items-center mt-3 ${priorityStyle.text}`}>
                 <FiFlag className="w-4 h-4 mr-1" />
                 {lead.priority} Priority
             </p>

@@ -7,7 +7,7 @@ import { useLeads } from '../contexts/LeadsContext';
 import { useUser } from '../contexts/UserContext';
 import { ASSIGNEES } from '../constants';
 import { SortOption } from '../types';
-import { FiFilter, FiPlus, FiBarChart2 } from 'react-icons/fi';
+import { FiFilter, FiPlus, FiBarChart2, FiDownload } from 'react-icons/fi';
 
 const Leads: React.FC = () => {
     const { 
@@ -25,7 +25,8 @@ const Leads: React.FC = () => {
         filterAssignee,
         setFilterAssignee,
         sortBy,
-        setSortBy
+        setSortBy,
+        filteredLeads
     } = useLeads();
     const { user } = useUser();
     
@@ -36,6 +37,33 @@ const Leads: React.FC = () => {
             deleteLead(leadToDelete);
         }
         setLeadToDelete(null);
+    };
+
+    const handleExportCSV = () => {
+        const headers = ['ID', 'Name', 'Company', 'Priority', 'Deal Value', 'Status', 'Assigned To', 'Contacted Date', 'Follow-up Date', 'Notes'];
+        
+        const rows = filteredLeads.map(lead => [
+            lead.id,
+            `"${lead.name.replace(/"/g, '""')}"`,
+            `"${lead.company.replace(/"/g, '""')}"`,
+            lead.priority,
+            lead.dealValue,
+            lead.status,
+            lead.assignedTo,
+            lead.contactedDate,
+            lead.followUpDate || '',
+            `"${(lead.notes || '').replace(/"/g, '""').replace(/\n/g, ' ')}"`
+        ].join(','));
+
+        const csvContent = "data:text/csv;charset=utf-8," + [headers.join(','), ...rows].join('\n');
+
+        const encodedUri = encodeURI(csvContent);
+        const link = document.createElement("a");
+        link.setAttribute("href", encodedUri);
+        link.setAttribute("download", "leads_export.csv");
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
     };
     
     const controlClasses = "bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 dark:focus:ring-offset-gray-800";
@@ -72,6 +100,14 @@ const Leads: React.FC = () => {
                             <option value="date-asc">Sort by Follow-up Date</option>
                         </select>
                     </div>
+
+                    <button 
+                        onClick={handleExportCSV}
+                        className="bg-green-500 hover:bg-green-600 text-white font-bold py-2 px-4 rounded-lg flex items-center gap-2"
+                    >
+                        <FiDownload className="w-5 h-5" />
+                        <span>Export</span>
+                    </button>
 
                     <button 
                         onClick={() => openModal()} 

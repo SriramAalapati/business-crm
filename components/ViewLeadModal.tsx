@@ -1,6 +1,7 @@
-import React from 'react';
-import { FiX, FiUser, FiBriefcase, FiFlag, FiDollarSign, FiCalendar, FiEdit3, FiGitCommit, FiPlusCircle, FiCheckCircle } from 'react-icons/fi';
+import React, { useState } from 'react';
+import { FiX, FiUser, FiBriefcase, FiFlag, FiDollarSign, FiCalendar, FiEdit3, FiGitCommit, FiPlusCircle, FiCheckCircle, FiSend } from 'react-icons/fi';
 import { Lead, LeadActivity, Priority } from '../types';
+import { useLeads } from '../contexts/LeadsContext';
 
 interface ViewLeadModalProps {
   isOpen: boolean;
@@ -33,7 +34,18 @@ const InfoItem: React.FC<{ icon: React.ReactElement, label: string, value?: stri
 
 
 const ViewLeadModal: React.FC<ViewLeadModalProps> = ({ isOpen, onClose, lead }) => {
+  const { addNoteToLead } = useLeads();
+  const [newNote, setNewNote] = useState('');
+
   if (!isOpen) return null;
+
+  const handleAddNote = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (newNote.trim()) {
+      addNoteToLead(lead.id, newNote.trim());
+      setNewNote('');
+    }
+  };
 
   const priorityStyle = priorityClasses[lead.priority];
 
@@ -73,9 +85,9 @@ const ViewLeadModal: React.FC<ViewLeadModalProps> = ({ isOpen, onClose, lead }) 
                      </p>
                 </div>
                 {/* Right Panel: Activity */}
-                <div className="lg:col-span-2 p-6">
+                <div className="lg:col-span-2 p-6 flex flex-col">
                     <h3 className="font-semibold text-lg mb-4">Activity Timeline</h3>
-                    <div className="relative">
+                    <div className="relative flex-grow overflow-y-auto pr-2">
                         <div className="absolute left-3.5 top-0 h-full w-0.5 bg-gray-200 dark:bg-gray-700" />
                         <ul className="space-y-6">
                             {lead.activity.map(act => (
@@ -93,6 +105,25 @@ const ViewLeadModal: React.FC<ViewLeadModalProps> = ({ isOpen, onClose, lead }) 
                             ))}
                         </ul>
                     </div>
+                     <form onSubmit={handleAddNote} className="mt-6 flex-shrink-0">
+                        <div className="relative">
+                            <textarea
+                                value={newNote}
+                                onChange={(e) => setNewNote(e.target.value)}
+                                rows={3}
+                                className="w-full p-3 pr-12 text-sm text-gray-700 dark:text-gray-200 bg-gray-100 dark:bg-gray-700 rounded-lg border border-gray-300 dark:border-gray-600 focus:outline-none focus:ring-2 focus:ring-primary-500"
+                                placeholder="Add a note or update..."
+                            />
+                            <button
+                                type="submit"
+                                className="absolute right-2 bottom-2 p-2 rounded-full bg-primary-500 text-white hover:bg-primary-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 dark:focus:ring-offset-gray-800 disabled:bg-gray-400 dark:disabled:bg-gray-600"
+                                disabled={!newNote.trim()}
+                                aria-label="Add Note"
+                            >
+                                <FiSend className="w-5 h-5"/>
+                            </button>
+                        </div>
+                    </form>
                 </div>
             </div>
         </div>

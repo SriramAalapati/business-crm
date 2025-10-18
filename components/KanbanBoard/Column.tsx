@@ -33,6 +33,7 @@ const Column: React.FC<ColumnProps> = ({ id, title, leads }) => {
             </div>
             <div ref={setNodeRef} className="flex-1 p-2 space-y-2 overflow-y-auto">
                 <SortableContext items={leads.map(l => l.id)} strategy={verticalListSortingStrategy}>
+                    {/* FIX: Removed explicit type on `lead` to allow for correct type inference, resolving the issue. */}
                     {leads.map(lead => (
                         <SortableLeadItem key={lead.id} lead={lead} />
                     ))}

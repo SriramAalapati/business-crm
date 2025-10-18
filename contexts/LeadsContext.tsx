@@ -3,6 +3,7 @@ import { Lead, LeadStatus, AppProviderProps, SortOption, Priority, LeadActivity 
 import { INITIAL_LEADS } from '../constants';
 import { arrayMove } from '@dnd-kit/sortable';
 import { useUser } from './UserContext';
+import { useToast } from './ToastContext';
 
 interface LeadsContextType {
   leads: Lead[];
@@ -11,6 +12,7 @@ interface LeadsContextType {
   addLead: (newLeadData: Omit<Lead, 'id' | 'avatar' | 'activity'>) => void;
   editLead: (updatedLead: Lead) => void;
   reorderLeads: (activeId: string, overId: string) => void;
+  addNoteToLead: (leadId: string, noteText: string) => void;
   
   filteredLeads: Lead[];
   setSearchTerm: (term: string) => void;
@@ -48,6 +50,7 @@ const priorityOrder: Record<Priority, number> = {
 
 export const LeadsProvider: React.FC<AppProviderProps> = ({ children }) => {
   const { user } = useUser();
+  const { addToast } = useToast();
   const [leads, setLeads] = useState<Lead[]>(INITIAL_LEADS);
   const [searchTerm, setSearchTerm] = useState('');
   const [leadToDelete, setLeadToDelete] = useState<string | null>(null);
@@ -98,15 +101,26 @@ export const LeadsProvider: React.FC<AppProviderProps> = ({ children }) => {
   };
 
   const updateLeadStatus = (leadId: string, newStatus: LeadStatus) => {
-    setLeads(prevLeads =>
-      prevLeads.map(lead => {
-        if (lead.id === leadId) {
-          const activity = createActivity('Status Change', `Status changed from ${lead.status} to ${newStatus}.`);
-          return { ...lead, status: newStatus, activity: [activity, ...lead.activity] };
-        }
-        return lead;
-      })
-    );
+    // Defer state update to prevent race condition with dnd-kit's animation/cleanup
+    setTimeout(() => {
+      setLeads(prevLeads => {
+          const leadToUpdate = prevLeads.find(l => l.id === leadId);
+          if (!leadToUpdate || leadToUpdate.status === newStatus) {
+              return prevLeads;
+          }
+
+          const oldStatus = leadToUpdate.status;
+          const activity = createActivity('Status Change', `Status changed from ${oldStatus} to ${newStatus}.`);
+
+          addToast(`Lead moved from ${oldStatus} to ${newStatus}`, 'info');
+
+          return prevLeads.map(lead =>
+              lead.id === leadId
+                  ? { ...lead, status: newStatus, activity: [activity, ...lead.activity] }
+                  : lead
+          );
+      });
+    }, 0);
   };
   
   const reorderLeads = (activeId: string, overId: string) => {
@@ -141,6 +155,20 @@ export const LeadsProvider: React.FC<AppProviderProps> = ({ children }) => {
         return lead;
     }));
   }
+
+  const addNoteToLead = (leadId: string, noteText: string) => {
+    if (!noteText.trim()) return;
+    setLeads(prevLeads =>
+      prevLeads.map(lead => {
+        if (lead.id === leadId) {
+          const newActivity = createActivity('Note Added', noteText);
+          return { ...lead, activity: [newActivity, ...lead.activity] };
+        }
+        return lead;
+      })
+    );
+    addToast('Note added successfully!', 'success');
+  };
   
   const openModal = (lead?: Lead) => {
     setEditingLead(lead || null);
@@ -161,6 +189,15 @@ export const LeadsProvider: React.FC<AppProviderProps> = ({ children }) => {
     setIsViewModalOpen(false);
     setViewingLead(null);
   }
+
+  useEffect(() => {
+    if (viewingLead) {
+      const updatedLeadInList = leads.find(l => l.id === viewingLead.id);
+      if (updatedLeadInList && JSON.stringify(updatedLeadInList) !== JSON.stringify(viewingLead)) {
+        setViewingLead(updatedLeadInList);
+      }
+    }
+  }, [leads, viewingLead]);
 
   const filteredLeads = useMemo(() => {
     let processLeads = [...leads];
@@ -208,6 +245,7 @@ export const LeadsProvider: React.FC<AppProviderProps> = ({ children }) => {
         addLead,
         editLead,
         reorderLeads,
+        addNoteToLead,
         filteredLeads, 
         setSearchTerm, 
         searchTerm, 
