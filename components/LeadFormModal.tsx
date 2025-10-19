@@ -1,7 +1,6 @@
 import React, { useState, useEffect, FormEvent } from 'react';
-import { FiX } from 'react-icons/fi';
+import { FiX, FiLoader } from 'react-icons/fi';
 import { useLeads } from '../contexts/LeadsContext';
-// FIX: Import LeadSource to use in the component.
 import { Lead, LeadStatus, Priority, LeadSource } from '../types';
 import { KANBAN_COLUMNS, ASSIGNEES } from '../constants';
 import CustomDatePicker from './CustomDatePicker';
@@ -12,9 +11,7 @@ interface LeadFormModalProps {
   lead: Lead | null;
 }
 
-const LeadFormModal: React.FC<LeadFormModalProps> = ({ isOpen, onClose, lead }) => {
-  const { addLead, editLead } = useLeads();
-  const [formData, setFormData] = useState({
+const getInitialFormState = () => ({
     name: '',
     company: '',
     priority: 'Medium' as Priority,
@@ -23,43 +20,39 @@ const LeadFormModal: React.FC<LeadFormModalProps> = ({ isOpen, onClose, lead }) 
     assignedTo: ASSIGNEES[0],
     contactedDate: new Date().toISOString().split('T')[0],
     followUpDate: '',
+    followUpTime: '',
     notes: '',
-    // FIX: Add 'source' property to the initial state to satisfy the Lead type.
     source: 'Website' as LeadSource,
-  });
+});
+
+
+const LeadFormModal: React.FC<LeadFormModalProps> = ({ isOpen, onClose, lead }) => {
+  const { addLead, editLead } = useLeads();
+  const [loading, setLoading] = useState(false);
+  const [formData, setFormData] = useState(getInitialFormState());
   
   const isEditMode = !!lead;
 
   useEffect(() => {
-    if (lead) {
-      setFormData({
-        name: lead.name,
-        company: lead.company,
-        priority: lead.priority,
-        dealValue: lead.dealValue,
-        status: lead.status,
-        assignedTo: lead.assignedTo,
-        contactedDate: lead.contactedDate,
-        followUpDate: lead.followUpDate || '',
-        notes: lead.notes || '',
-        // FIX: Set the 'source' when editing an existing lead.
-        source: lead.source,
-      });
-    } else {
-      // Reset form for new lead
-      setFormData({
-        name: '',
-        company: '',
-        priority: 'Medium' as Priority,
-        dealValue: 0,
-        status: LeadStatus.NEW,
-        assignedTo: ASSIGNEES[0],
-        contactedDate: new Date().toISOString().split('T')[0],
-        followUpDate: '',
-        notes: '',
-        // FIX: Reset 'source' for a new lead entry.
-        source: 'Website' as LeadSource,
-      });
+    if (isOpen) {
+        if (lead) {
+            const followUp = lead.followUpDateTime ? new Date(lead.followUpDateTime) : null;
+            setFormData({
+                name: lead.name,
+                company: lead.company,
+                priority: lead.priority,
+                dealValue: lead.dealValue,
+                status: lead.status,
+                assignedTo: lead.assignedTo,
+                contactedDate: lead.contactedDate,
+                followUpDate: followUp ? followUp.toISOString().split('T')[0] : '',
+                followUpTime: followUp ? followUp.toTimeString().slice(0, 5) : '',
+                notes: lead.notes || '',
+                source: lead.source,
+            });
+        } else {
+            setFormData(getInitialFormState());
+        }
     }
   }, [lead, isOpen]);
 
@@ -72,13 +65,26 @@ const LeadFormModal: React.FC<LeadFormModalProps> = ({ isOpen, onClose, lead }) 
     setFormData(prev => ({...prev, [name]: date}));
   }
 
-  const handleSubmit = (e: FormEvent) => {
+  const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
-    if (isEditMode) {
-      editLead({ ...lead!, ...formData });
-    } else {
-      addLead(formData);
+    setLoading(true);
+
+    const { followUpDate, followUpTime, ...restOfData } = formData;
+    const submissionData: any = { ...restOfData };
+    
+    if (followUpDate && followUpTime) {
+        const dateTime = new Date(`${followUpDate}T${followUpTime}:00`);
+        submissionData.followUpDateTime = dateTime.toISOString();
+    } else if (followUpDate) {
+        submissionData.followUpDateTime = new Date(followUpDate).toISOString();
     }
+
+    if (isEditMode) {
+      await editLead({ ...lead!, ...submissionData });
+    } else {
+      await addLead(submissionData);
+    }
+    setLoading(false);
     onClose();
   };
   
@@ -141,26 +147,23 @@ const LeadFormModal: React.FC<LeadFormModalProps> = ({ isOpen, onClose, lead }) 
                   {ASSIGNEES.map(name => <option key={name} value={name}>{name}</option>)}
                 </select>
               </div>
-              {/* FIX: Add a select input for the lead source. */}
               <div>
                 <label htmlFor="source" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Source</label>
                 <select id="source" name="source" value={formData.source} onChange={handleChange} className={inputClass}>
                   {(['Website', 'Referral', 'Cold Call', 'Event'] as LeadSource[]).map(s => <option key={s} value={s}>{s}</option>)}
                 </select>
               </div>
-               <div>
-                <label htmlFor="followUpDate" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Follow-up Date</label>
-                <CustomDatePicker 
-                    selectedDate={formData.followUpDate}
-                    onDateChange={(date) => handleDateChange('followUpDate', date)}
-                />
-              </div>
-               <div>
-                <label htmlFor="contactedDate" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Contacted Date</label>
-                 <CustomDatePicker 
-                    selectedDate={formData.contactedDate}
-                    onDateChange={(date) => handleDateChange('contactedDate', date)}
-                />
+               <div className="md:col-span-2">
+                <label htmlFor="followUpDate" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Follow-up Date & Time</label>
+                 <div className="flex gap-2">
+                    <div className="flex-grow">
+                        <CustomDatePicker 
+                            selectedDate={formData.followUpDate}
+                            onDateChange={(date) => handleDateChange('followUpDate', date)}
+                        />
+                    </div>
+                    <input type="time" name="followUpTime" value={formData.followUpTime} onChange={handleChange} className={`${inputClass} w-32`} />
+                 </div>
               </div>
               <div className="md:col-span-2">
                  <label htmlFor="notes" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Notes</label>
@@ -179,9 +182,11 @@ const LeadFormModal: React.FC<LeadFormModalProps> = ({ isOpen, onClose, lead }) 
             </button>
             <button
               type="submit"
-              className="px-4 py-2 text-sm font-medium text-white bg-primary-600 hover:bg-primary-700 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500"
+              disabled={loading}
+              className="px-4 py-2 text-sm font-medium text-white bg-primary-600 hover:bg-primary-700 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 disabled:bg-primary-400 disabled:cursor-not-allowed flex items-center"
             >
-              {isEditMode ? 'Save Changes' : 'Create Lead'}
+              {loading && <FiLoader className="animate-spin -ml-1 mr-2 h-5 w-5 text-white" />}
+              {loading ? 'Saving...' : (isEditMode ? 'Save Changes' : 'Create Lead')}
             </button>
           </div>
         </form>

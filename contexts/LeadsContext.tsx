@@ -1,17 +1,21 @@
-import React, { createContext, useState, useContext, useMemo, useEffect } from 'react';
+import React, { createContext, useState, useContext, useMemo, useEffect, useCallback } from 'react';
 import { Lead, LeadStatus, AppProviderProps, SortOption, Priority, LeadActivity } from '../types';
-import { INITIAL_LEADS, KANBAN_COLUMNS } from '../constants';
+import { KANBAN_COLUMNS } from '../constants';
 import { arrayMove } from '@dnd-kit/sortable';
 import { useUser } from './UserContext';
 import { useToast } from './ToastContext';
+import { api } from '../apiCaller';
+import { Active, Over } from '@dnd-kit/core';
 
 interface LeadsContextType {
   leads: Lead[];
-  deleteLead: (leadId: string) => void;
-  addLead: (newLeadData: Omit<Lead, 'id' | 'avatar' | 'activity'>) => void;
-  editLead: (updatedLead: Lead) => void;
-  addNoteToLead: (leadId: string, noteText: string) => void;
-  handleLeadDragEnd: (active: { id: string, data: React.MutableRefObject<any> }, over: { id: string, data: React.MutableRefObject<any> } | null) => void;
+  loading: boolean;
+  fetchLeads: () => Promise<void>;
+  deleteLead: (leadId: string) => Promise<void>;
+  addLead: (newLeadData: Omit<Lead, 'id' | 'avatar' | 'activity'>) => Promise<void>;
+  editLead: (updatedLead: Lead) => Promise<void>;
+  addNoteToLead: (leadId: string, noteText: string) => Promise<void>;
+  handleLeadDragEnd: (active: Active, over: Over | null) => void;
   
   filteredLeads: Lead[];
   setSearchTerm: (term: string) => void;
@@ -50,15 +54,8 @@ const priorityOrder: Record<Priority, number> = {
 export const LeadsProvider: React.FC<AppProviderProps> = ({ children }) => {
   const { user } = useUser();
   const { addToast } = useToast();
-  const [leads, setLeads] = useState<Lead[]>(() => {
-    try {
-        const item = window.localStorage.getItem('crm-leads');
-        return item ? JSON.parse(item) : INITIAL_LEADS;
-    } catch (error) {
-        console.error("Error reading leads from localStorage", error);
-        return INITIAL_LEADS;
-    }
-  });
+  const [leads, setLeads] = useState<Lead[]>([]);
+  const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [leadToDelete, setLeadToDelete] = useState<string | null>(null);
   
@@ -80,22 +77,25 @@ export const LeadsProvider: React.FC<AppProviderProps> = ({ children }) => {
       return [];
     }
   });
+  
+  const fetchLeads = useCallback(async () => {
+    if (!user) return;
+    setLoading(true);
+    try {
+      const path = `/leads?role=${user.role}&name=${user.name}`;
+      const response = await api.get<{ leads: Lead[] }>(path);
+      setLeads(response.leads);
+    } catch (error) {
+      addToast('Failed to fetch leads.', 'error');
+      console.error(error);
+    } finally {
+      setLoading(false);
+    }
+  }, [user, addToast]);
 
   useEffect(() => {
-    try {
-        window.localStorage.setItem('crm-leads', JSON.stringify(leads));
-    } catch (error) {
-        console.error("Error saving leads to localStorage", error);
-    }
-  }, [leads]);
-
-  const createActivity = (type: LeadActivity['type'], details: string): LeadActivity => ({
-    id: `act-${Date.now()}`,
-    type,
-    details,
-    user: user?.name || 'System',
-    timestamp: new Date().toISOString(),
-  });
+    fetchLeads();
+  }, [fetchLeads]);
 
   useEffect(() => {
     try {
@@ -115,140 +115,91 @@ export const LeadsProvider: React.FC<AppProviderProps> = ({ children }) => {
     });
   };
 
-    const handleLeadDragEnd = (active: { id: string }, over: { id: string } | null) => {
-        if (!over || active.id === over.id) {
-            return;
-        }
+  const handleLeadDragEnd = async (active: Active, over: Over | null) => {
+      if (!over || active.id === over.id) return;
 
-        setLeads((prevLeads) => {
-            const activeId = String(active.id);
-            const overId = String(over.id);
+      const activeId = String(active.id);
+      const overId = String(over.id);
+      const activeLead = leads.find((l) => l.id === activeId);
 
-            const activeIndex = prevLeads.findIndex((l) => l.id === activeId);
-            const overIndex = prevLeads.findIndex((l) => l.id === overId);
+      if (!activeLead) return;
+      
+      const overIsAColumn = KANBAN_COLUMNS.some((c) => c.id === overId);
+      const newStatus = overIsAColumn ? (overId as LeadStatus) : leads.find(l => l.id === overId)?.status;
 
-            const activeLead = prevLeads[activeIndex];
-            if (!activeLead) return prevLeads;
+      if (!newStatus || newStatus === activeLead.status) {
+          const activeIndex = leads.findIndex((l) => l.id === activeId);
+          const overIndex = leads.findIndex((l) => l.id === overId);
+          if (overIndex === -1) return;
+          setLeads(arrayMove(leads, activeIndex, overIndex));
+          return;
+      }
+      
+       const updatedLead = { ...activeLead, status: newStatus };
+      
+      const originalLeads = [...leads];
+      const activeIndex = originalLeads.findIndex((l) => l.id === activeId);
+      const overIndex = originalLeads.findIndex((l) => l.id === overId);
+      const updatedOptimisticLeads = originalLeads.filter(l => l.id !== activeId);
+      const insertionIndex = overIsAColumn ? updatedOptimisticLeads.length : overIndex;
+      updatedOptimisticLeads.splice(insertionIndex, 0, updatedLead);
+      setLeads(updatedOptimisticLeads);
 
-            const overIsAColumn = KANBAN_COLUMNS.some((c) => c.id === overId);
-            const newStatus = overIsAColumn
-                ? (overId as LeadStatus)
-                : overIndex !== -1
-                ? prevLeads[overIndex].status
-                : null;
+      try {
+          await editLead(updatedLead);
+          addToast(`Lead moved to ${newStatus}`, 'info');
+      } catch (error) {
+          setLeads(originalLeads);
+      }
+  };
 
-            if (!newStatus) return prevLeads;
-
-            // CASE 1: Reordering within the same column.
-            if (newStatus === activeLead.status) {
-                if (overIndex === -1) return prevLeads;
-                return arrayMove(prevLeads, activeIndex, overIndex);
-            }
-
-            // CASE 2: Moving to a new column.
-            const updatedLead = {
-                ...activeLead,
-                status: newStatus,
-                activity: [
-                    createActivity(
-                        'Status Change',
-                        `Status changed from ${activeLead.status} to ${newStatus}`
-                    ),
-                    ...activeLead.activity,
-                ],
-            };
-            addToast(`Lead moved to ${newStatus}`, 'info');
-
-            const remainingLeads = prevLeads.filter((l) => l.id !== activeId);
-            
-            let insertionIndex;
-
-            if (overIsAColumn) {
-                 // Dropped on an empty column. Place it logically based on column order.
-                const columnOrder = KANBAN_COLUMNS.map(c => c.id);
-                const newStatusOrderIndex = columnOrder.indexOf(newStatus);
-                
-                let lastRelevantIndex = -1;
-                 // Find the last item that is in the new column's preceding columns.
-                for (let i = remainingLeads.length - 1; i >= 0; i--) {
-                    const currentStatusOrderIndex = columnOrder.indexOf(remainingLeads[i].status);
-                    if (currentStatusOrderIndex < newStatusOrderIndex) {
-                        lastRelevantIndex = i;
-                        break;
-                    }
-                }
-                insertionIndex = lastRelevantIndex + 1;
-            } else {
-                // Dropped on another lead card. Find its new index in the filtered array.
-                const overLeadInRemaining = remainingLeads.findIndex((l) => l.id === overId);
-                insertionIndex = overLeadInRemaining;
-            }
-
-            remainingLeads.splice(insertionIndex, 0, updatedLead);
-            return remainingLeads;
-        });
-    };
-
-  const deleteLead = (leadId: string) => {
+  const deleteLead = async (leadId: string) => {
+    const originalLeads = [...leads];
     setLeads(prevLeads => prevLeads.filter(lead => lead.id !== leadId));
+    try {
+        await api.delete(`/leads/${leadId}`);
+        addToast('Lead deleted successfully', 'success');
+    } catch (error) {
+        setLeads(originalLeads);
+        addToast('Failed to delete lead.', 'error');
+    }
   };
   
-  const addLead = (newLeadData: Omit<Lead, 'id' | 'avatar' | 'activity'>) => {
-    const newLead: Lead = {
-      ...newLeadData,
-      id: `lead-${Date.now()}`,
-      avatar: `https://picsum.photos/seed/lead-${Date.now()}/40/40`,
-      activity: [createActivity('Created', 'Lead was created.')]
-    };
-    setLeads(prev => [newLead, ...prev]);
+  const addLead = async (newLeadData: Omit<Lead, 'id' | 'avatar' | 'activity'>) => {
+    try {
+        const { lead } = await api.post<{ lead: Lead }>('/leads', newLeadData);
+        setLeads(prev => [lead, ...prev]);
+        addToast('Lead added successfully!', 'success');
+    } catch (error) {
+        addToast('Failed to add lead.', 'error');
+    }
   }
   
-  const editLead = (updatedLead: Lead) => {
-    let leadName = '';
-    setLeads(prev => prev.map(lead => {
-        if (lead.id === updatedLead.id) {
-            leadName = updatedLead.name;
-            const activity = createActivity('Edited', 'Lead details were updated.');
-            return {...updatedLead, activity: [activity, ...updatedLead.activity]};
-        }
-        return lead;
-    }));
-    addToast(`Lead "${leadName}" updated successfully!`, 'success');
+  const editLead = async (updatedLead: Lead) => {
+    try {
+        const { lead } = await api.put<{ lead: Lead }>(`/leads/${updatedLead.id}`, updatedLead);
+        setLeads(prev => prev.map(l => (l.id === lead.id ? lead : l)));
+        addToast(`Lead "${lead.name}" updated successfully!`, 'success');
+    } catch (error) {
+        addToast('Failed to update lead.', 'error');
+    }
   }
 
-  const addNoteToLead = (leadId: string, noteText: string) => {
+  const addNoteToLead = async (leadId: string, noteText: string) => {
     if (!noteText.trim()) return;
-    setLeads(prevLeads =>
-      prevLeads.map(lead => {
-        if (lead.id === leadId) {
-          const newActivity = createActivity('Note Added', noteText);
-          return { ...lead, activity: [newActivity, ...lead.activity] };
-        }
-        return lead;
-      })
-    );
-    addToast('Note added successfully!', 'success');
+    try {
+        const { lead } = await api.post<{ lead: Lead }>(`/leads/${leadId}/note`, { noteText });
+        setLeads(prevLeads => prevLeads.map(l => (l.id === lead.id ? lead : l)));
+        addToast('Note added successfully!', 'success');
+    } catch (error) {
+        addToast('Failed to add note.', 'error');
+    }
   };
   
-  const openModal = (lead?: Lead) => {
-    setEditingLead(lead || null);
-    setIsModalOpen(true);
-  }
-  
-  const closeModal = () => {
-    setIsModalOpen(false);
-    setEditingLead(null);
-  }
-
-  const openViewModal = (lead: Lead) => {
-    setViewingLead(lead);
-    setIsViewModalOpen(true);
-  }
-
-  const closeViewModal = () => {
-    setIsViewModalOpen(false);
-    setViewingLead(null);
-  }
+  const openModal = (lead?: Lead) => { setEditingLead(lead || null); setIsModalOpen(true); }
+  const closeModal = () => { setIsModalOpen(false); setEditingLead(null); }
+  const openViewModal = (lead: Lead) => { setViewingLead(lead); setIsViewModalOpen(true); }
+  const closeViewModal = () => { setIsViewModalOpen(false); setViewingLead(null); }
 
   useEffect(() => {
     if (viewingLead) {
@@ -261,10 +212,6 @@ export const LeadsProvider: React.FC<AppProviderProps> = ({ children }) => {
 
   const filteredLeads = useMemo(() => {
     let processLeads = [...leads];
-
-    if (user?.role === 'agent') {
-      processLeads = processLeads.filter(lead => lead.assignedTo === user.name);
-    }
     
     if (searchTerm) {
       processLeads = processLeads.filter(
@@ -280,17 +227,14 @@ export const LeadsProvider: React.FC<AppProviderProps> = ({ children }) => {
 
     processLeads.sort((a, b) => {
         switch(sortBy) {
-            case 'priority-desc':
-                return priorityOrder[b.priority] - priorityOrder[a.priority];
-            case 'name-asc':
-                return a.name.localeCompare(b.name);
+            case 'priority-desc': return priorityOrder[b.priority] - priorityOrder[a.priority];
+            case 'name-asc': return a.name.localeCompare(b.name);
             case 'date-asc': {
-                const dateA = a.followUpDate ? new Date(a.followUpDate).getTime() : Infinity;
-                const dateB = b.followUpDate ? new Date(b.followUpDate).getTime() : Infinity;
+                const dateA = a.followUpDateTime ? new Date(a.followUpDateTime).getTime() : Infinity;
+                const dateB = b.followUpDateTime ? new Date(b.followUpDateTime).getTime() : Infinity;
                 return dateA - dateB;
             }
-            default:
-                return 0;
+            default: return 0;
         }
     });
 
@@ -300,6 +244,8 @@ export const LeadsProvider: React.FC<AppProviderProps> = ({ children }) => {
   return (
     <LeadsContext.Provider value={{ 
         leads, 
+        loading,
+        fetchLeads,
         deleteLead,
         addLead,
         editLead,

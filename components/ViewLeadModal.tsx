@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { FiX, FiUser, FiBriefcase, FiFlag, FiDollarSign, FiCalendar, FiEdit3, FiGitCommit, FiPlusCircle, FiCheckCircle, FiSend, FiEdit2, FiCheck } from 'react-icons/fi';
+import { FiX, FiUser, FiBriefcase, FiFlag, FiDollarSign, FiCalendar, FiEdit3, FiGitCommit, FiPlusCircle, FiCheckCircle, FiSend, FiEdit2, FiCheck, FiLoader } from 'react-icons/fi';
 import { Lead, LeadActivity, Priority, LeadStatus } from '../types';
 import { useLeads } from '../contexts/LeadsContext';
 import { ASSIGNEES, KANBAN_COLUMNS } from '../constants';
@@ -42,9 +42,9 @@ const EditableField: React.FC<{ lead: Lead, field: EditableLeadField, type: 'sel
         setValue(lead[field]);
     }, [lead, field]);
 
-    const handleSave = () => {
+    const handleSave = async () => {
         if (lead[field] !== value) {
-            editLead({ ...lead, [field]: value });
+            await editLead({ ...lead, [field]: value });
         }
         setIsEditing(false);
     };
@@ -99,20 +99,28 @@ const EditableField: React.FC<{ lead: Lead, field: EditableLeadField, type: 'sel
 const ViewLeadModal: React.FC<ViewLeadModalProps> = ({ isOpen, onClose, lead }) => {
   const { addNoteToLead } = useLeads();
   const [newNote, setNewNote] = useState('');
+  const [isAddingNote, setIsAddingNote] = useState(false);
 
   if (!isOpen) return null;
 
-  const handleAddNote = (e: React.FormEvent) => {
+  const handleAddNote = async (e: React.FormEvent) => {
     e.preventDefault();
     if (newNote.trim()) {
-      addNoteToLead(lead.id, newNote.trim());
+      setIsAddingNote(true);
+      await addNoteToLead(lead.id, newNote.trim());
       setNewNote('');
+      setIsAddingNote(false);
     }
   };
   
   const priorityOptions = [{value: 'High', label: 'High'}, {value: 'Medium', label: 'Medium'}, {value: 'Low', label: 'Low'}];
   const statusOptions = KANBAN_COLUMNS.map(c => ({ value: c.id, label: c.title }));
   const assigneeOptions = ASSIGNEES.map(a => ({ value: a, label: a }));
+  
+  const formatDateTime = (isoString?: string) => {
+    if (!isoString) return 'Not set';
+    return new Date(isoString).toLocaleString([], { year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit', hour12: true });
+  }
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-60" onClick={onClose}>
@@ -144,7 +152,7 @@ const ViewLeadModal: React.FC<ViewLeadModalProps> = ({ isOpen, onClose, lead }) 
                         <div className="flex items-start"><div className="text-gray-400 mt-1"><FiFlag/></div><div className="ml-3"><p className="text-sm text-gray-500 dark:text-gray-400">Priority</p><EditableField lead={lead} field="priority" type="select" options={priorityOptions} /></div></div>
                         <div className="flex items-start"><div className="text-gray-400 mt-1"><FiUser/></div><div className="ml-3"><p className="text-sm text-gray-500 dark:text-gray-400">Assigned To</p><EditableField lead={lead} field="assignedTo" type="select" options={assigneeOptions} /></div></div>
                         <div className="flex items-start"><div className="text-gray-400 mt-1"><FiDollarSign/></div><div className="ml-3"><p className="text-sm text-gray-500 dark:text-gray-400">Deal Value</p><EditableField lead={lead} field="dealValue" type="number" /></div></div>
-                        <div className="flex items-start"><div className="text-gray-400 mt-1"><FiCalendar/></div><div className="ml-3"><p className="text-sm text-gray-500 dark:text-gray-400">Follow-up Date</p><p className="font-medium text-gray-800 dark:text-gray-200">{lead.followUpDate ? new Date(lead.followUpDate).toLocaleDateString() : 'Not set'}</p></div></div>
+                        <div className="flex items-start"><div className="text-gray-400 mt-1"><FiCalendar/></div><div className="ml-3"><p className="text-sm text-gray-500 dark:text-gray-400">Follow-up Date</p><p className="font-medium text-gray-800 dark:text-gray-200">{formatDateTime(lead.followUpDateTime)}</p></div></div>
                     </div>
                      <h3 className="font-semibold text-lg mt-8 mb-4">Notes</h3>
                      <p className="text-sm text-gray-600 dark:text-gray-300 bg-gray-50 dark:bg-gray-700/50 p-4 rounded-md whitespace-pre-wrap">
@@ -191,10 +199,10 @@ const ViewLeadModal: React.FC<ViewLeadModalProps> = ({ isOpen, onClose, lead }) 
                             <button
                                 type="submit"
                                 className="absolute right-2 bottom-2 p-2 rounded-full bg-primary-500 text-white hover:bg-primary-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 dark:focus:ring-offset-gray-800 disabled:bg-gray-400 dark:disabled:bg-gray-600"
-                                disabled={!newNote.trim()}
+                                disabled={!newNote.trim() || isAddingNote}
                                 aria-label="Add Note"
                             >
-                                <FiSend className="w-5 h-5"/>
+                                {isAddingNote ? <FiLoader className="w-5 h-5 animate-spin" /> : <FiSend className="w-5 h-5"/>}
                             </button>
                         </div>
                     </form>

@@ -1,18 +1,17 @@
-import React, { createContext, useState, useContext, useMemo } from 'react';
-import { Task, AppProviderProps, Priority, TaskStatus } from '../types';
-import { INITIAL_TASKS } from '../constants';
+import React, { createContext, useState, useContext, useMemo, useEffect, useCallback } from 'react';
+import { Task, AppProviderProps, TaskStatus } from '../types';
 import { useUser } from './UserContext';
 import { useToast } from './ToastContext';
+import { api } from '../apiCaller';
 
 interface TasksContextType {
   tasks: Task[];
-  addTask: (newTaskData: Omit<Task, 'id'>) => void;
-  editTask: (updatedTask: Task) => void;
-  deleteTask: (taskId: string) => void;
-  updateTaskStatus: (taskId: string, newStatus: TaskStatus) => void;
-
+  loading: boolean;
+  addTask: (newTaskData: Omit<Task, 'id'>) => Promise<void>;
+  editTask: (updatedTask: Task) => Promise<void>;
+  deleteTask: (taskId: string) => Promise<void>;
+  updateTaskStatus: (taskId: string, newStatus: TaskStatus) => Promise<void>;
   filteredTasks: Task[];
-  // Add filters and sorting later if needed
 }
 
 const TasksContext = createContext<TasksContextType | undefined>(undefined);
@@ -20,46 +19,79 @@ const TasksContext = createContext<TasksContextType | undefined>(undefined);
 export const TasksProvider: React.FC<AppProviderProps> = ({ children }) => {
   const { user } = useUser();
   const { addToast } = useToast();
-  const [tasks, setTasks] = useState<Task[]>(INITIAL_TASKS);
+  const [tasks, setTasks] = useState<Task[]>([]);
+  const [loading, setLoading] = useState(true);
+  
+  const fetchTasks = useCallback(async () => {
+    if (!user) return;
+    setLoading(true);
+    try {
+      const path = `/tasks?role=${user.role}&name=${user.name}`;
+      const response = await api.get<{ tasks: Task[] }>(path);
+      setTasks(response.tasks);
+    } catch (error) {
+      addToast('Failed to fetch tasks.', 'error');
+      console.error(error);
+    } finally {
+      setLoading(false);
+    }
+  }, [user, addToast]);
 
-  const addTask = (newTaskData: Omit<Task, 'id'>) => {
-    const newTask: Task = {
-      ...newTaskData,
-      id: `task-${Date.now()}`,
-    };
-    setTasks(prev => [newTask, ...prev]);
-    addToast('Task added successfully!', 'success');
+  useEffect(() => {
+    fetchTasks();
+  }, [fetchTasks]);
+
+  const addTask = async (newTaskData: Omit<Task, 'id'>) => {
+    try {
+      const { task } = await api.post<{ task: Task }>('/tasks', newTaskData);
+      setTasks(prev => [task, ...prev]);
+      addToast('Task added successfully!', 'success');
+    } catch (error) {
+      addToast('Failed to add task.', 'error');
+    }
   };
   
-  const editTask = (updatedTask: Task) => {
-    setTasks(prev => prev.map(task => (task.id === updatedTask.id ? updatedTask : task)));
-    addToast('Task updated!', 'info');
+  const editTask = async (updatedTask: Task) => {
+    try {
+      const { task } = await api.put<{ task: Task }>(`/tasks/${updatedTask.id}`, updatedTask);
+      setTasks(prev => prev.map(t => (t.id === task.id ? task : t)));
+      addToast('Task updated!', 'info');
+    } catch (error) {
+      addToast('Failed to update task.', 'error');
+    }
   };
 
-  const deleteTask = (taskId: string) => {
+  const deleteTask = async (taskId: string) => {
+    const originalTasks = [...tasks];
     setTasks(prev => prev.filter(task => task.id !== taskId));
-    addToast('Task deleted.', 'error');
+    try {
+      await api.delete(`/tasks/${taskId}`);
+      addToast('Task deleted.', 'error');
+    } catch (error) {
+      setTasks(originalTasks);
+      addToast('Failed to delete task.', 'error');
+    }
   };
 
-  const updateTaskStatus = (taskId: string, newStatus: TaskStatus) => {
-      setTasks(prev => prev.map(task => 
-        task.id === taskId ? { ...task, status: newStatus } : task
-      ));
+  const updateTaskStatus = async (taskId: string, newStatus: TaskStatus) => {
+      const taskToUpdate = tasks.find(t => t.id === taskId);
+      if (!taskToUpdate) return;
+      
+      const updatedTask = { ...taskToUpdate, status: newStatus };
+      await editTask(updatedTask);
   };
   
   const filteredTasks = useMemo(() => {
     let processTasks = [...tasks];
-    if (user?.role === 'agent') {
-      processTasks = processTasks.filter(task => task.assignedTo === user.name);
-    }
-    // Simple sort by due date
-    processTasks.sort((a, b) => new Date(a.dueDate).getTime() - new Date(b.dueDate).getTime());
+    // Filtering is handled by the API, but sort chronologically on the client
+    processTasks.sort((a, b) => new Date(a.dueDateTime).getTime() - new Date(b.dueDateTime).getTime());
     return processTasks;
-  }, [tasks, user]);
+  }, [tasks]);
 
   return (
     <TasksContext.Provider value={{ 
         tasks,
+        loading,
         addTask,
         editTask,
         deleteTask,

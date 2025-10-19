@@ -99,11 +99,11 @@ const ChartsWidget: React.FC<{ leads: Lead[] }> = ({ leads }) => {
 const UpcomingFollowUps: React.FC<{ leads: Lead[] }> = ({ leads }) => {
     const upcoming = useMemo(() => {
         const today = new Date();
-        today.setHours(0, 0, 0, 0); // Set to start of today for comparison
+        today.setHours(0, 0, 0, 0);
 
         return leads
-            .filter(lead => lead.followUpDate && new Date(lead.followUpDate) >= today)
-            .sort((a, b) => new Date(a.followUpDate!).getTime() - new Date(b.followUpDate!).getTime())
+            .filter(lead => lead.followUpDateTime && new Date(lead.followUpDateTime) >= today)
+            .sort((a, b) => new Date(a.followUpDateTime!).getTime() - new Date(b.followUpDateTime!).getTime())
             .slice(0, 5);
     }, [leads]);
 
@@ -122,7 +122,7 @@ const UpcomingFollowUps: React.FC<{ leads: Lead[] }> = ({ leads }) => {
                                 </div>
                             </div>
                             <div className="text-right">
-                                <p className="text-sm font-semibold text-primary-500">{new Date(lead.followUpDate!).toLocaleDateString()}</p>
+                                <p className="text-sm font-semibold text-primary-500">{new Date(lead.followUpDateTime!).toLocaleDateString()}</p>
                                 <p className="text-xs text-gray-400">{lead.assignedTo}</p>
                             </div>
                         </li>
@@ -162,7 +162,6 @@ const Dashboard: React.FC = () => {
                 const parsed = JSON.parse(saved);
                 const savedIds = new Set(parsed.map((w: WidgetConfig) => w.id));
                 const defaultIds = new Set(DEFAULT_WIDGETS.map(w => w.id));
-                // FIX: Cast `id` to the specific WidgetConfig['id'] union type to satisfy the `Set.has()` method's type requirement.
                 if (savedIds.size === defaultIds.size && [...savedIds].every(id => defaultIds.has(id as WidgetConfig['id']))) {
                     return parsed;
                 }

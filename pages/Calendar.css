@@ -1,0 +1,122 @@
+/* General container styling */
+.calendar-container {
+    height: calc(100vh - 12rem); /* Full height minus topbar and padding */
+}
+
+/* Toolbar styling */
+.fc .fc-toolbar.fc-header-toolbar {
+    margin-bottom: 1.5em;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1rem;
+}
+
+.fc .fc-toolbar-title {
+    font-size: 1.5em !important;
+    font-weight: bold;
+}
+
+/* Button styling */
+.fc .fc-button {
+    background-color: var(--fc-button-bg-color, #f3f4f6);
+    color: var(--fc-button-text-color, #374151);
+    border: 1px solid var(--fc-button-border-color, #d1d5db);
+    padding: 0.5em 1em;
+    font-weight: 600;
+    transition: all 0.2s ease-in-out;
+}
+
+.dark .fc .fc-button {
+    background-color: var(--fc-button-bg-color-dark, #374151);
+    color: var(--fc-button-text-color-dark, #d1d5db);
+    border: 1px solid var(--fc-button-border-color-dark, #4b5563);
+}
+
+.fc .fc-button:hover {
+    background-color: var(--fc-button-hover-bg-color, #e5e7eb);
+}
+
+.dark .fc .fc-button:hover {
+    background-color: var(--fc-button-hover-bg-color-dark, #4b5563);
+}
+
+.fc .fc-button-primary {
+    background-color: #3b82f6;
+    border-color: #3b82f6;
+    color: white;
+}
+
+.fc .fc-button-primary:hover {
+    background-color: #2563eb;
+    border-color: #2563eb;
+}
+
+.fc .fc-button-primary:disabled {
+    background-color: #9ca3af;
+    border-color: #9ca3af;
+}
+
+.fc .fc-button-primary:not(:disabled).fc-button-active,
+.fc .fc-button-primary:not(:disabled):active {
+    background-color: #1d4ed8;
+    border-color: #1d4ed8;
+}
+
+/* Today's date styling */
+.fc .fc-daygrid-day.fc-day-today {
+    background-color: rgba(59, 130, 246, 0.1);
+}
+
+.dark .fc .fc-daygrid-day.fc-day-today {
+    background-color: rgba(59, 130, 246, 0.15);
+}
+
+/* View-specific styling */
+.fc-theme-standard th {
+    border: 1px solid #e5e7eb;
+}
+.dark .fc-theme-standard th {
+    border: 1px solid #374151;
+}
+
+.fc-theme-standard td, .fc-theme-standard th {
+    border-color: #e5e7eb;
+}
+.dark .fc-theme-standard td, .dark .fc-theme-standard th {
+    border-color: #374151;
+}
+
+/* Event styling */
+.fc-event {
+    cursor: pointer;
+    border-width: 1px !important;
+    font-size: 0.8em;
+}
+
+.fc-v-event {
+    border-radius: 4px;
+}
+
+.fc-daygrid-event-dot {
+    border-color: inherit !important;
+}
+
+.fc-direction-ltr .fc-daygrid-event .fc-event-time {
+    margin-right: 5px;
+}
+
+/* List view styling */
+.fc-theme-standard .fc-list-day-cushion {
+    background-color: #f9fafb;
+}
+
+.dark .fc-theme-standard .fc-list-day-cushion {
+    background-color: #1f2937;
+}
+
+.fc .fc-list-event:hover td {
+    background-color: rgba(59, 130, 246, 0.05);
+}
+.dark .fc .fc-list-event:hover td {
+    background-color: rgba(59, 130, 246, 0.1);
+}

@@ -1,9 +1,11 @@
-import React, { useState, useEffect, FormEvent } from 'react';
-import { FiX } from 'react-icons/fi';
+import React, { useState, useEffect, FormEvent, useCallback } from 'react';
+import { FiX, FiLoader } from 'react-icons/fi';
 import { useTasks } from '../contexts/TasksContext';
+import { useUser } from '../contexts/UserContext';
 import { Task, TaskStatus, Priority } from '../types';
-import { ASSIGNEES } from '../constants';
+import { ALL_USERS } from '../constants';
 import CustomDatePicker from './CustomDatePicker';
+import AgentSelector from './AgentSelector';
 
 interface TaskFormModalProps {
   isOpen: boolean;
@@ -13,51 +15,65 @@ interface TaskFormModalProps {
 
 const TaskFormModal: React.FC<TaskFormModalProps> = ({ isOpen, onClose, task }) => {
   const { addTask, editTask } = useTasks();
-  const [formData, setFormData] = useState({
-    title: '',
-    dueDate: new Date().toISOString().split('T')[0],
-    priority: 'Medium' as Priority,
-    status: TaskStatus.TODO,
-    assignedTo: ASSIGNEES[0],
-    notes: '',
-  });
+  const { user } = useUser();
+  const [loading, setLoading] = useState(false);
+
+  const getInitialFormState = useCallback(() => {
+    const now = new Date();
+    return {
+      title: '',
+      dueDate: now.toISOString().split('T')[0],
+      dueTime: now.toTimeString().slice(0, 5),
+      priority: 'Medium' as Priority,
+      status: TaskStatus.TODO,
+      assignedTo: user?.name || ALL_USERS[0]?.name || '',
+      notes: '',
+    };
+  }, [user]);
+
+  const [formData, setFormData] = useState(getInitialFormState());
   
   const isEditMode = !!task;
 
   useEffect(() => {
-    if (task) {
-      setFormData({
-        title: task.title,
-        dueDate: task.dueDate,
-        priority: task.priority,
-        status: task.status,
-        assignedTo: task.assignedTo,
-        notes: task.notes || '',
-      });
-    } else {
-      setFormData({
-        title: '',
-        dueDate: new Date().toISOString().split('T')[0],
-        priority: 'Medium' as Priority,
-        status: TaskStatus.TODO,
-        assignedTo: ASSIGNEES[0],
-        notes: '',
-      });
+    if (isOpen) {
+        if (task) {
+            const dueDate = new Date(task.dueDateTime);
+            setFormData({
+                title: task.title,
+                dueDate: dueDate.toISOString().split('T')[0],
+                dueTime: dueDate.toTimeString().slice(0, 5),
+                priority: task.priority,
+                status: task.status,
+                assignedTo: task.assignedTo,
+                notes: task.notes || '',
+            });
+        } else {
+            setFormData(getInitialFormState());
+        }
     }
-  }, [task, isOpen]);
+  }, [task, isOpen, getInitialFormState]);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
     setFormData(prev => ({ ...prev, [name]: value }));
   };
 
-  const handleSubmit = (e: FormEvent) => {
+  const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
+    setLoading(true);
+
+    const { dueDate, dueTime, ...rest } = formData;
+    const dueDateTime = new Date(`${dueDate}T${dueTime}:00`).toISOString();
+
+    const submissionData = { ...rest, dueDateTime };
+
     if (isEditMode) {
-      editTask({ ...task!, ...formData });
+      await editTask({ ...task!, ...submissionData });
     } else {
-      addTask(formData);
+      await addTask(submissionData);
     }
+    setLoading(false);
     onClose();
   };
   
@@ -81,7 +97,12 @@ const TaskFormModal: React.FC<TaskFormModalProps> = ({ isOpen, onClose, task }) 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
                 <label htmlFor="dueDate" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Due Date</label>
-                <CustomDatePicker selectedDate={formData.dueDate} onDateChange={(date) => setFormData(p => ({...p, dueDate: date}))} />
+                <div className="flex gap-2">
+                    <div className="flex-grow">
+                        <CustomDatePicker selectedDate={formData.dueDate} onDateChange={(date) => setFormData(p => ({...p, dueDate: date}))} />
+                    </div>
+                     <input type="time" name="dueTime" value={formData.dueTime} onChange={handleChange} className={`${inputClass} w-32`} />
+                </div>
               </div>
               <div>
                 <label htmlFor="priority" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Priority</label>
@@ -98,10 +119,12 @@ const TaskFormModal: React.FC<TaskFormModalProps> = ({ isOpen, onClose, task }) 
                 </select>
               </div>
               <div>
-                <label htmlFor="assignedTo" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Assigned To</label>
-                <select id="assignedTo" name="assignedTo" value={formData.assignedTo} onChange={handleChange} className={inputClass}>
-                  {ASSIGNEES.map(name => <option key={name} value={name}>{name}</option>)}
-                </select>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Assigned To</label>
+                <AgentSelector
+                  users={ALL_USERS}
+                  selectedValue={formData.assignedTo}
+                  onChange={(value) => setFormData(p => ({...p, assignedTo: value}))}
+                />
               </div>
             </div>
              <div>
@@ -111,7 +134,14 @@ const TaskFormModal: React.FC<TaskFormModalProps> = ({ isOpen, onClose, task }) 
           </div>
           <div className="bg-gray-50 dark:bg-gray-700 px-6 py-4 flex justify-end space-x-3 rounded-b-lg">
             <button type="button" onClick={onClose} className="px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm hover:bg-gray-50 dark:hover:bg-gray-600">Cancel</button>
-            <button type="submit" className="px-4 py-2 text-sm font-medium text-white bg-primary-600 hover:bg-primary-700 rounded-md shadow-sm">{isEditMode ? 'Save Changes' : 'Create Task'}</button>
+            <button
+              type="submit"
+              disabled={loading}
+              className="px-4 py-2 text-sm font-medium text-white bg-primary-600 hover:bg-primary-700 rounded-md shadow-sm disabled:bg-primary-400 disabled:cursor-not-allowed flex items-center"
+            >
+              {loading && <FiLoader className="animate-spin -ml-1 mr-2 h-5 w-5 text-white" />}
+              {loading ? 'Saving...' : (isEditMode ? 'Save Changes' : 'Create Task')}
+            </button>
           </div>
         </form>
       </div>

@@ -12,18 +12,22 @@ interface AddTaskModalProps {
 const AddTaskModal: React.FC<AddTaskModalProps> = ({ isOpen, onClose, onAddTask }) => {
   const [title, setTitle] = useState('');
   const [date, setDate] = useState(new Date().toISOString().split('T')[0]);
+  const [time, setTime] = useState(new Date().toTimeString().slice(0, 5));
 
   useEffect(() => {
     if (isOpen) {
+      const now = new Date();
       setTitle('');
-      setDate(new Date().toISOString().split('T')[0]);
+      setDate(now.toISOString().split('T')[0]);
+      setTime(now.toTimeString().slice(0, 5));
     }
   }, [isOpen]);
 
   const handleSubmit = (e: FormEvent) => {
     e.preventDefault();
-    if (title.trim() && date) {
-      onAddTask({ title, date });
+    if (title.trim() && date && time) {
+      const start = new Date(`${date}T${time}:00`).toISOString();
+      onAddTask({ title, start });
     }
   };
 
@@ -38,7 +42,7 @@ const AddTaskModal: React.FC<AddTaskModalProps> = ({ isOpen, onClose, onAddTask 
           <div className="p-6 border-b dark:border-gray-700">
             <div className="flex items-start justify-between">
               <h2 className="text-xl font-semibold text-gray-900 dark:text-white">
-                Add Personal Task
+                Add Personal Event
               </h2>
               <button
                 type="button"
@@ -52,7 +56,7 @@ const AddTaskModal: React.FC<AddTaskModalProps> = ({ isOpen, onClose, onAddTask 
           </div>
           <div className="p-6 space-y-4">
             <div>
-              <label htmlFor="task-title" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Task Title</label>
+              <label htmlFor="task-title" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Event Title</label>
               <input 
                 type="text" 
                 id="task-title"
@@ -64,8 +68,13 @@ const AddTaskModal: React.FC<AddTaskModalProps> = ({ isOpen, onClose, onAddTask 
               />
             </div>
             <div>
-              <label htmlFor="task-date" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Date</label>
-              <CustomDatePicker selectedDate={date} onDateChange={setDate} />
+              <label htmlFor="task-date" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Date & Time</label>
+              <div className="flex gap-2">
+                <div className="flex-grow">
+                    <CustomDatePicker selectedDate={date} onDateChange={setDate} />
+                </div>
+                <input type="time" value={time} onChange={(e) => setTime(e.target.value)} className={`${inputClass} w-32`} />
+              </div>
             </div>
           </div>
           <div className="bg-gray-50 dark:bg-gray-700 px-6 py-4 flex justify-end space-x-3 rounded-b-lg">
@@ -80,7 +89,7 @@ const AddTaskModal: React.FC<AddTaskModalProps> = ({ isOpen, onClose, onAddTask 
               type="submit"
               className="px-4 py-2 text-sm font-medium text-white bg-primary-600 hover:bg-primary-700 rounded-md shadow-sm"
             >
-              Add Task
+              Add Event
             </button>
           </div>
         </form>

@@ -1,22 +1,25 @@
 import React, { useState } from 'react';
 import { useUser } from '../contexts/UserContext';
 import Logo from '../components/Logo';
-import { FiLogIn, FiAlertCircle } from 'react-icons/fi';
+import { FiLogIn, FiAlertCircle, FiLoader } from 'react-icons/fi';
 
 const Login: React.FC = () => {
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [error, setError] = useState('');
+    const [loading, setLoading] = useState(false);
     const { signIn } = useUser();
 
-    const handleSubmit = (e: React.FormEvent) => {
+    const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         setError('');
         if (email.trim() && password.trim()) {
-            const success = signIn(email.trim());
+            setLoading(true);
+            const success = await signIn(email.trim());
             if (!success) {
                 setError('Invalid email or password.');
             }
+            setLoading(false);
         } else {
             setError('Please enter both email and password.');
         }
@@ -80,10 +83,11 @@ const Login: React.FC = () => {
                         <div>
                             <button
                                 type="submit"
-                                className="group relative w-full flex justify-center py-3 px-4 border border-transparent text-sm font-medium rounded-md text-white bg-primary-600 hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 dark:focus:ring-offset-gray-800"
+                                disabled={loading}
+                                className="group relative w-full flex justify-center py-3 px-4 border border-transparent text-sm font-medium rounded-md text-white bg-primary-600 hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 dark:focus:ring-offset-gray-800 disabled:bg-primary-400 disabled:cursor-not-allowed"
                             >
-                                <FiLogIn className="w-5 h-5 mr-2" />
-                                Sign In
+                                {loading ? <FiLoader className="w-5 h-5 animate-spin" /> : <FiLogIn className="w-5 h-5 mr-2" />}
+                                {loading ? 'Signing In...' : 'Sign In'}
                             </button>
                         </div>
                     </form>

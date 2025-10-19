@@ -43,7 +43,7 @@ export interface Lead {
   priority: Priority;
   status: LeadStatus;
   contactedDate: string;
-  followUpDate?: string;
+  followUpDateTime?: string;
   assignedTo: string;
   avatar: string;
   notes?: string;
@@ -65,7 +65,7 @@ export interface AppProviderProps {
 
 export interface PersonalEvent {
   title: string;
-  date: string;
+  start: string;
 }
 
 export enum TaskStatus {
@@ -77,7 +77,7 @@ export enum TaskStatus {
 export interface Task {
   id: string;
   title: string;
-  dueDate: string;
+  dueDateTime: string;
   priority: Priority;
   status: TaskStatus;
   assignedTo: string;

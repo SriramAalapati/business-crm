@@ -12,32 +12,25 @@ interface SidebarProps {
 const Sidebar: React.FC<SidebarProps> = ({ isOpen, setIsOpen }) => {
     const { user } = useUser();
     
-    const baseNavItems = [
+    const adminNavItems = [
         { to: '/dashboard', icon: <FiGrid className="w-6 h-6" />, label: 'Dashboard' },
         { to: '/reports', icon: <FiTrendingUp className="w-6 h-6" />, label: 'Reports' },
         { to: '/tasks', icon: <FiCheckSquare className="w-6 h-6" />, label: 'Tasks' },
+        { to: '/leads', icon: <FiUsers className="w-6 h-6" />, label: 'All Leads' },
+        { to: '/manage-agents', icon: <FiBriefcase className="w-6 h-6" />, label: 'Manage Agents'},
         { to: '/calendar', icon: <FiCalendar className="w-6 h-6" />, label: 'Calendar' },
         { to: '/user-details', icon: <FiUser className="w-6 h-6" />, label: 'User Details' },
     ];
 
-    const roleBasedNavItems = user?.role === 'admin'
-     ? [
-        { to: '/leads', icon: <FiUsers className="w-6 h-6" />, label: 'All Leads' },
-        { to: '/manage-agents', icon: <FiBriefcase className="w-6 h-6" />, label: 'Manage Agents'},
-       ]
-     : [
+    const agentNavItems = [
+        { to: '/dashboard', icon: <FiGrid className="w-6 h-6" />, label: 'Dashboard' },
+        { to: '/tasks', icon: <FiCheckSquare className="w-6 h-6" />, label: 'Tasks' },
         { to: '/leads', icon: <FiUsers className="w-6 h-6" />, label: 'My Pipeline' },
-       ];
-    
-    const navItems = [
-        baseNavItems[0], // Dashboard
-        baseNavItems[1], // Reports
-        baseNavItems[2], // Tasks
-        ...roleBasedNavItems, 
-        baseNavItems[3], // Calendar
-        baseNavItems[4], // User Details
+        { to: '/calendar', icon: <FiCalendar className="w-6 h-6" />, label: 'Calendar' },
+        { to: '/user-details', icon: <FiUser className="w-6 h-6" />, label: 'User Details' },
     ];
-
+    
+    const navItems = user?.role === 'admin' ? adminNavItems : agentNavItems;
 
     const activeLinkClass = "bg-primary-500 text-white";
     const inactiveLinkClass = "text-gray-500 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700";

@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { HashRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { useUser } from './contexts/UserContext';
 import Layout from './components/Layout';
@@ -10,9 +10,22 @@ import Login from './pages/Login';
 import ManageAgents from './pages/ManageAgents';
 import Reports from './pages/Reports';
 import Tasks from './pages/Tasks';
+import { FiLoader } from 'react-icons/fi';
 
 const App: React.FC = () => {
-  const { user } = useUser();
+  const { user, verifyUser, loading } = useUser();
+  
+  useEffect(() => {
+    verifyUser();
+  }, []);
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center h-screen bg-gray-100 dark:bg-gray-900">
+        <FiLoader className="w-12 h-12 text-primary-500 animate-spin" />
+      </div>
+    );
+  }
 
   return (
     <HashRouter>
@@ -26,12 +39,19 @@ const App: React.FC = () => {
           <Route path="/" element={<Layout />}>
             <Route index element={<Navigate to="/dashboard" />} />
             <Route path="dashboard" element={<Dashboard />} />
-            <Route path="reports" element={<Reports />} />
             <Route path="tasks" element={<Tasks />} />
             <Route path="leads" element={<Leads />} />
             <Route path="calendar" element={<Calendar />} />
             <Route path="user-details" element={<UserDetails />} />
-            {user.role === 'admin' && <Route path="manage-agents" element={<ManageAgents />} />}
+
+            {/* Admin-only routes */}
+            {user.role === 'admin' && (
+              <>
+                <Route path="reports" element={<Reports />} />
+                <Route path="manage-agents" element={<ManageAgents />} />
+              </>
+            )}
+            
             <Route path="*" element={<Navigate to="/dashboard" />} />
           </Route>
         )}

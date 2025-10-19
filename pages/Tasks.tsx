@@ -17,8 +17,41 @@ const statusClasses: Record<TaskStatus, { text: string, bg: string }> = {
     [TaskStatus.DONE]: { text: 'text-green-800 dark:text-green-200', bg: 'bg-green-100 dark:bg-green-900/50' },
 };
 
+const TaskTableSkeleton: React.FC = () => (
+    <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md overflow-hidden">
+        <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+                <thead className="text-xs text-gray-700 uppercase bg-gray-50 dark:bg-gray-700 dark:text-gray-400">
+                    <tr>
+                        <th className="px-6 py-3">Task</th>
+                        <th className="px-6 py-3">Due Date</th>
+                        <th className="px-6 py-3">Priority</th>
+                        <th className="px-6 py-3">Status</th>
+                        <th className="px-6 py-3">Notes</th>
+                        <th className="px-6 py-3">Assigned To</th>
+                        <th className="px-6 py-3 text-right">Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {[...Array(5)].map((_, i) => (
+                        <tr key={i} className="bg-white dark:bg-gray-800 border-b dark:border-gray-700 animate-pulse">
+                            <td className="px-6 py-4"><div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-3/4"></div></td>
+                            <td className="px-6 py-4"><div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-1/2"></div></td>
+                            <td className="px-6 py-4"><div className="h-6 bg-gray-200 dark:bg-gray-700 rounded-full w-20"></div></td>
+                            <td className="px-6 py-4"><div className="h-6 bg-gray-200 dark:bg-gray-700 rounded-full w-24"></div></td>
+                            <td className="px-6 py-4"><div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-full"></div></td>
+                            <td className="px-6 py-4"><div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-1/2"></div></td>
+                            <td className="px-6 py-4"><div className="h-8 bg-gray-200 dark:bg-gray-700 rounded w-16 ml-auto"></div></td>
+                        </tr>
+                    ))}
+                </tbody>
+            </table>
+        </div>
+    </div>
+)
+
 const Tasks: React.FC = () => {
-    const { filteredTasks, deleteTask } = useTasks();
+    const { filteredTasks, deleteTask, loading } = useTasks();
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [editingTask, setEditingTask] = useState<Task | null>(null);
     const [taskToDelete, setTaskToDelete] = useState<string | null>(null);
@@ -33,11 +66,16 @@ const Tasks: React.FC = () => {
         setEditingTask(null);
     };
 
-    const handleConfirmDelete = () => {
+    const handleConfirmDelete = async () => {
         if (taskToDelete) {
-            deleteTask(taskToDelete);
+            await deleteTask(taskToDelete);
         }
         setTaskToDelete(null);
+    };
+
+    const formatDateTime = (isoString: string) => {
+        const date = new Date(isoString);
+        return date.toLocaleString([], { year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit', hour12: true });
     };
 
     const taskBeingDeleted = filteredTasks.find(t => t.id === taskToDelete);
@@ -55,48 +93,63 @@ const Tasks: React.FC = () => {
                 </button>
             </div>
             
-            <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md overflow-hidden">
-                <div className="overflow-x-auto">
-                    <table className="w-full text-sm text-left text-gray-500 dark:text-gray-400">
-                        <thead className="text-xs text-gray-700 uppercase bg-gray-50 dark:bg-gray-700 dark:text-gray-400">
-                            <tr>
-                                <th scope="col" className="px-6 py-3">Task</th>
-                                <th scope="col" className="px-6 py-3">Due Date</th>
-                                <th scope="col" className="px-6 py-3">Priority</th>
-                                <th scope="col" className="px-6 py-3">Status</th>
-                                <th scope="col" className="px-6 py-3">Assigned To</th>
-                                <th scope="col" className="px-6 py-3 text-right">Actions</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {filteredTasks.map((task) => (
-                                <tr key={task.id} className="bg-white dark:bg-gray-800 border-b dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600">
-                                    <td className="px-6 py-4 font-medium text-gray-900 dark:text-white">{task.title}</td>
-                                    <td className="px-6 py-4">{new Date(task.dueDate).toLocaleDateString()}</td>
-                                    <td className="px-6 py-4">
-                                        <span className={`px-2 py-1 text-xs font-semibold rounded-full flex items-center w-fit ${priorityClasses[task.priority].bg} ${priorityClasses[task.priority].text}`}>
-                                           <FiFlag className="w-3 h-3 mr-1" /> {task.priority}
-                                        </span>
-                                    </td>
-                                    <td className="px-6 py-4">
-                                        <span className={`px-2 py-1 text-xs font-semibold rounded-full ${statusClasses[task.status].bg} ${statusClasses[task.status].text}`}>
-                                            {task.status}
-                                        </span>
-                                    </td>
-                                    <td className="px-6 py-4">{task.assignedTo}</td>
-                                    <td className="px-6 py-4 text-right">
-                                        <div className="flex justify-end gap-2">
-                                            <button onClick={() => openModal(task)} className="p-2 text-gray-500 hover:text-blue-600 dark:hover:text-blue-400" aria-label="Edit task"><FiEdit className="w-5 h-5"/></button>
-                                            <button onClick={() => setTaskToDelete(task.id)} className="p-2 text-gray-500 hover:text-red-600 dark:hover:text-red-400" aria-label="Delete task"><FiTrash2 className="w-5 h-5"/></button>
-                                        </div>
-                                    </td>
+            {loading ? <TaskTableSkeleton /> : (
+                 <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md overflow-hidden">
+                    <div className="overflow-x-auto">
+                        <table className="w-full text-sm text-left text-gray-500 dark:text-gray-400">
+                            <thead className="text-xs text-gray-700 uppercase bg-gray-50 dark:bg-gray-700 dark:text-gray-400">
+                                <tr>
+                                    <th scope="col" className="px-6 py-3">Task</th>
+                                    <th scope="col" className="px-6 py-3">Due Date</th>
+                                    <th scope="col" className="px-6 py-3">Priority</th>
+                                    <th scope="col" className="px-6 py-3">Status</th>
+                                    <th scope="col" className="px-6 py-3">Notes</th>
+                                    <th scope="col" className="px-6 py-3">Assigned To</th>
+                                    <th scope="col" className="px-6 py-3 text-right">Actions</th>
                                 </tr>
-                            ))}
-                        </tbody>
-                    </table>
+                            </thead>
+                            <tbody>
+                                {filteredTasks.map((task) => (
+                                    <tr key={task.id} className="bg-white dark:bg-gray-800 border-b dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600">
+                                        <td className="px-6 py-4 font-medium text-gray-900 dark:text-white">{task.title}</td>
+                                        <td className="px-6 py-4">{formatDateTime(task.dueDateTime)}</td>
+                                        <td className="px-6 py-4">
+                                            <span className={`px-2 py-1 text-xs font-semibold rounded-full flex items-center w-fit ${priorityClasses[task.priority].bg} ${priorityClasses[task.priority].text}`}>
+                                               <FiFlag className="w-3 h-3 mr-1" /> {task.priority}
+                                            </span>
+                                        </td>
+                                        <td className="px-6 py-4">
+                                            <span className={`px-2 py-1 text-xs font-semibold rounded-full ${statusClasses[task.status].bg} ${statusClasses[task.status].text}`}>
+                                                {task.status}
+                                            </span>
+                                        </td>
+                                        <td className="px-6 py-4">
+                                            {task.notes ? (
+                                                <div className="relative group">
+                                                    <p className="truncate max-w-[200px]">{task.notes}</p>
+                                                    <div className="absolute bottom-full mb-2 w-72 p-2 text-sm text-white bg-gray-900 dark:bg-gray-700 rounded-md shadow-lg invisible opacity-0 group-hover:visible group-hover:opacity-100 transition-opacity z-10">
+                                                        {task.notes}
+                                                    </div>
+                                                </div>
+                                            ) : (
+                                                <span className="text-gray-400 italic">No notes</span>
+                                            )}
+                                        </td>
+                                        <td className="px-6 py-4">{task.assignedTo}</td>
+                                        <td className="px-6 py-4 text-right">
+                                            <div className="flex justify-end gap-2">
+                                                <button onClick={() => openModal(task)} className="p-2 text-gray-500 hover:text-blue-600 dark:hover:text-blue-400" aria-label="Edit task"><FiEdit className="w-5 h-5"/></button>
+                                                <button onClick={() => setTaskToDelete(task.id)} className="p-2 text-gray-500 hover:text-red-600 dark:hover:text-red-400" aria-label="Delete task"><FiTrash2 className="w-5 h-5"/></button>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                ))}
+                            </tbody>
+                        </table>
+                    </div>
                 </div>
-            </div>
-            
+            )}
+           
             {isModalOpen && <TaskFormModal isOpen={isModalOpen} onClose={closeModal} task={editingTask} />}
             {taskBeingDeleted && (
                 <ConfirmationDialog

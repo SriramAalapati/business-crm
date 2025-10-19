@@ -5,12 +5,33 @@ import LeadFormModal from '../components/LeadFormModal';
 import ViewLeadModal from '../components/ViewLeadModal';
 import { useLeads } from '../contexts/LeadsContext';
 import { useUser } from '../contexts/UserContext';
-import { ASSIGNEES } from '../constants';
+import { ASSIGNEES, KANBAN_COLUMNS } from '../constants';
 import { SortOption } from '../types';
 import { FiFilter, FiPlus, FiBarChart2, FiDownload } from 'react-icons/fi';
 
+const KanbanSkeleton: React.FC = () => (
+    <div className="flex overflow-x-auto gap-4 p-1 pb-4 -mx-1">
+        {KANBAN_COLUMNS.map(column => (
+            <div key={column.id} className="flex flex-col w-80 min-w-[320px] bg-gray-100 dark:bg-gray-800 rounded-lg shadow-sm">
+                 <div className="p-4 border-b border-gray-200 dark:border-gray-700">
+                    <div className="h-6 bg-gray-200 dark:bg-gray-700 rounded w-3/4 animate-pulse"></div>
+                </div>
+                <div className="p-2 space-y-2">
+                    {[...Array(3)].map((_, i) => (
+                         <div key={i} className="bg-white dark:bg-gray-700 p-4 rounded-lg shadow-md animate-pulse">
+                            <div className="h-4 bg-gray-200 dark:bg-gray-600 rounded w-5/6 mb-3"></div>
+                            <div className="h-3 bg-gray-200 dark:bg-gray-600 rounded w-1/2"></div>
+                         </div>
+                    ))}
+                </div>
+            </div>
+        ))}
+    </div>
+);
+
 const Leads: React.FC = () => {
     const { 
+        loading,
         leads, 
         leadToDelete, 
         setLeadToDelete, 
@@ -32,9 +53,9 @@ const Leads: React.FC = () => {
     
     const leadBeingDeleted = leads.find(l => l.id === leadToDelete);
 
-    const handleConfirmDelete = () => {
+    const handleConfirmDelete = async () => {
         if (leadToDelete) {
-            deleteLead(leadToDelete);
+            await deleteLead(leadToDelete);
         }
         setLeadToDelete(null);
     };
@@ -51,7 +72,7 @@ const Leads: React.FC = () => {
             lead.status,
             lead.assignedTo,
             lead.contactedDate,
-            lead.followUpDate || '',
+            lead.followUpDateTime ? new Date(lead.followUpDateTime).toLocaleString() : '',
             `"${(lead.notes || '').replace(/"/g, '""').replace(/\n/g, ' ')}"`
         ].join(','));
 
@@ -118,7 +139,7 @@ const Leads: React.FC = () => {
                     </button>
                 </div>
             </div>
-            <KanbanBoard />
+            {loading ? <KanbanSkeleton /> : <KanbanBoard />}
             {leadBeingDeleted && (
                 <ConfirmationDialog
                     isOpen={!!leadBeingDeleted}
