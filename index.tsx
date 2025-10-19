@@ -5,6 +5,7 @@ import { ThemeProvider } from './contexts/ThemeContext';
 import { UserProvider } from './contexts/UserContext';
 import { LeadsProvider } from './contexts/LeadsContext';
 import { ToastProvider } from './contexts/ToastContext';
+import { TasksProvider } from './contexts/TasksContext';
 
 const rootElement = document.getElementById('root');
 if (!rootElement) {
@@ -18,7 +19,9 @@ root.render(
       <UserProvider>
         <ToastProvider>
           <LeadsProvider>
-            <App />
+            <TasksProvider>
+              <App />
+            </TasksProvider>
           </LeadsProvider>
         </ToastProvider>
       </UserProvider>

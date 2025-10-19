@@ -4,7 +4,7 @@ import { sortableKeyboardCoordinates } from '@dnd-kit/sortable';
 import { useLeads } from '../../contexts/LeadsContext';
 import { KANBAN_COLUMNS } from '../../constants';
 import Column from './Column';
-import { Lead, LeadStatus } from '../../types';
+import { Lead } from '../../types';
 import LeadCard from './LeadCard';
 
 const dropAnimation: DropAnimation = {
@@ -18,7 +18,7 @@ const dropAnimation: DropAnimation = {
 };
 
 const KanbanBoard: React.FC = () => {
-    const { filteredLeads, updateLeadStatus, reorderLeads } = useLeads();
+    const { handleLeadDragEnd, filteredLeads } = useLeads();
     const [activeLead, setActiveLead] = useState<Lead | null>(null);
 
     const sensors = useSensors(
@@ -30,9 +30,8 @@ const KanbanBoard: React.FC = () => {
 
     const handleDragStart = (event: DragStartEvent) => {
         const { active } = event;
-        const lead = filteredLeads.find(l => l.id === active.id);
-        if (lead) {
-            setActiveLead(lead);
+        if (active.data.current?.type === 'Lead') {
+            setActiveLead(active.data.current.lead as Lead);
         }
     }
 
@@ -40,33 +39,9 @@ const KanbanBoard: React.FC = () => {
         const { active, over } = event;
         setActiveLead(null);
 
-        if (!over || active.id === over.id) {
-            return;
-        }
-
-        const activeId = String(active.id);
-        const overId = String(over.id);
+        if (!over) return;
         
-        const activeContainer = active.data.current?.sortable.containerId as LeadStatus;
-        const overIsAColumn = KANBAN_COLUMNS.some(c => c.id === overId);
-        const overContainer = overIsAColumn 
-            ? overId as LeadStatus 
-            : over.data.current?.sortable.containerId as LeadStatus;
-
-        if (!activeContainer || !overContainer) {
-            return;
-        }
-        
-        // Handle reordering within the same column or moving to a new column
-        if (activeContainer === overContainer) {
-             if (!overIsAColumn) {
-                // Reorder leads in the same column
-                reorderLeads(activeId, overId);
-             }
-        } else {
-            // Move lead to a new column (new status)
-            updateLeadStatus(activeId, overContainer);
-        }
+        handleLeadDragEnd(active, over);
     };
 
     return (
@@ -79,7 +54,7 @@ const KanbanBoard: React.FC = () => {
             >
                 {KANBAN_COLUMNS.map(column => {
                     const leadsInColumn = filteredLeads.filter(lead => lead.status === column.id);
-                    return <Column key={column.id} id={column.id} title={column.title} leads={leadsInColumn} />;
+                    return <Column key={column.id} id={column.id} title={column.title} leads={leadsInColumn} activeLead={activeLead} />;
                 })}
                 <DragOverlay dropAnimation={dropAnimation}>
                     {activeLead ? <LeadCard lead={activeLead} isOverlay /> : null}

@@ -1,7 +1,8 @@
 import React, { useState, useEffect, FormEvent } from 'react';
 import { FiX } from 'react-icons/fi';
 import { useLeads } from '../contexts/LeadsContext';
-import { Lead, LeadStatus, Priority } from '../types';
+// FIX: Import LeadSource to use in the component.
+import { Lead, LeadStatus, Priority, LeadSource } from '../types';
 import { KANBAN_COLUMNS, ASSIGNEES } from '../constants';
 import CustomDatePicker from './CustomDatePicker';
 
@@ -23,6 +24,8 @@ const LeadFormModal: React.FC<LeadFormModalProps> = ({ isOpen, onClose, lead }) 
     contactedDate: new Date().toISOString().split('T')[0],
     followUpDate: '',
     notes: '',
+    // FIX: Add 'source' property to the initial state to satisfy the Lead type.
+    source: 'Website' as LeadSource,
   });
   
   const isEditMode = !!lead;
@@ -39,6 +42,8 @@ const LeadFormModal: React.FC<LeadFormModalProps> = ({ isOpen, onClose, lead }) 
         contactedDate: lead.contactedDate,
         followUpDate: lead.followUpDate || '',
         notes: lead.notes || '',
+        // FIX: Set the 'source' when editing an existing lead.
+        source: lead.source,
       });
     } else {
       // Reset form for new lead
@@ -52,6 +57,8 @@ const LeadFormModal: React.FC<LeadFormModalProps> = ({ isOpen, onClose, lead }) 
         contactedDate: new Date().toISOString().split('T')[0],
         followUpDate: '',
         notes: '',
+        // FIX: Reset 'source' for a new lead entry.
+        source: 'Website' as LeadSource,
       });
     }
   }, [lead, isOpen]);
@@ -132,6 +139,13 @@ const LeadFormModal: React.FC<LeadFormModalProps> = ({ isOpen, onClose, lead }) 
                 <label htmlFor="assignedTo" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Assigned To</label>
                 <select id="assignedTo" name="assignedTo" value={formData.assignedTo} onChange={handleChange} className={inputClass}>
                   {ASSIGNEES.map(name => <option key={name} value={name}>{name}</option>)}
+                </select>
+              </div>
+              {/* FIX: Add a select input for the lead source. */}
+              <div>
+                <label htmlFor="source" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Source</label>
+                <select id="source" name="source" value={formData.source} onChange={handleChange} className={inputClass}>
+                  {(['Website', 'Referral', 'Cold Call', 'Event'] as LeadSource[]).map(s => <option key={s} value={s}>{s}</option>)}
                 </select>
               </div>
                <div>

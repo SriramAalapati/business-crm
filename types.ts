@@ -9,7 +9,7 @@ export interface User {
 }
 
 export interface Agent {
-  id: string;
+  id:string;
   name: string;
   email: string;
   avatar: string;
@@ -34,6 +34,8 @@ export interface LeadActivity {
   details: string;
 }
 
+export type LeadSource = 'Website' | 'Referral' | 'Cold Call' | 'Event';
+
 export interface Lead {
   id: string;
   name: string;
@@ -47,6 +49,7 @@ export interface Lead {
   notes?: string;
   dealValue: number;
   activity: LeadActivity[];
+  source: LeadSource;
 }
 
 export interface KanbanColumn {
@@ -63,4 +66,21 @@ export interface AppProviderProps {
 export interface PersonalEvent {
   title: string;
   date: string;
+}
+
+export enum TaskStatus {
+  TODO = 'To Do',
+  IN_PROGRESS = 'In Progress',
+  DONE = 'Done',
+}
+
+export interface Task {
+  id: string;
+  title: string;
+  dueDate: string;
+  priority: Priority;
+  status: TaskStatus;
+  assignedTo: string;
+  relatedLeadId?: string;
+  notes?: string;
 }

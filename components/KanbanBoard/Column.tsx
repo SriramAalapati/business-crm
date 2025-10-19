@@ -4,15 +4,23 @@ import { SortableContext, verticalListSortingStrategy, useSortable } from '@dnd-
 import { CSS } from '@dnd-kit/utilities';
 import LeadCard from './LeadCard';
 import { Lead } from '../../types';
+import { FiMove } from 'react-icons/fi';
 
 interface ColumnProps {
     id: string;
     title: string;
     leads: Lead[];
+    activeLead: Lead | null;
 }
 
 const SortableLeadItem = ({ lead }: { lead: Lead }) => {
-    const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: lead.id });
+    const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ 
+        id: lead.id,
+        data: {
+            type: 'Lead',
+            lead,
+        }
+    });
     const style = {
         transform: CSS.Transform.toString(transform),
         transition,
@@ -21,8 +29,10 @@ const SortableLeadItem = ({ lead }: { lead: Lead }) => {
 };
 
 
-const Column: React.FC<ColumnProps> = ({ id, title, leads }) => {
+const Column: React.FC<ColumnProps> = ({ id, title, leads, activeLead }) => {
     const { setNodeRef } = useDroppable({ id });
+
+    const showDropZone = activeLead && activeLead.status !== id;
 
     return (
         <div className="flex flex-col w-80 min-w-[320px] bg-gray-100 dark:bg-gray-800 rounded-lg shadow-sm max-h-[calc(100vh-12rem)]">
@@ -31,18 +41,25 @@ const Column: React.FC<ColumnProps> = ({ id, title, leads }) => {
                     {title} <span className="text-sm text-gray-500">{leads.length}</span>
                 </h3>
             </div>
-            <div ref={setNodeRef} className="flex-1 p-2 space-y-2 overflow-y-auto">
+            <div ref={setNodeRef} className="flex-1 p-2 space-y-2 overflow-y-auto relative">
                 <SortableContext items={leads.map(l => l.id)} strategy={verticalListSortingStrategy}>
-                    {/* FIX: Removed explicit type on `lead` to allow for correct type inference, resolving the issue. */}
                     {leads.map(lead => (
                         <SortableLeadItem key={lead.id} lead={lead} />
                     ))}
-                    {leads.length === 0 && (
-                        <div className="flex items-center justify-center h-24 text-sm text-gray-400 rounded-lg border-2 border-dashed border-gray-300 dark:border-gray-600">
-                            Drag leads here
-                        </div>
-                    )}
                 </SortableContext>
+                
+                {leads.length === 0 && !showDropZone && (
+                    <div className="flex items-center justify-center h-24 text-sm text-gray-400 rounded-lg border-2 border-dashed border-gray-300 dark:border-gray-600">
+                        Drag leads here
+                    </div>
+                )}
+
+                {showDropZone && (
+                    <div className="absolute inset-2 flex flex-col items-center justify-center bg-primary-500/10 dark:bg-primary-500/20 border-2 border-dashed border-primary-500 rounded-lg transition-opacity pointer-events-none">
+                        <FiMove className="w-8 h-8 text-primary-500 mb-2" />
+                        <span className="font-semibold text-primary-700 dark:text-primary-300">Move to {title}</span>
+                    </div>
+                )}
             </div>
         </div>
     );

@@ -1,18 +1,17 @@
 import React, { createContext, useState, useContext, useMemo, useEffect } from 'react';
 import { Lead, LeadStatus, AppProviderProps, SortOption, Priority, LeadActivity } from '../types';
-import { INITIAL_LEADS } from '../constants';
+import { INITIAL_LEADS, KANBAN_COLUMNS } from '../constants';
 import { arrayMove } from '@dnd-kit/sortable';
 import { useUser } from './UserContext';
 import { useToast } from './ToastContext';
 
 interface LeadsContextType {
   leads: Lead[];
-  updateLeadStatus: (leadId: string, newStatus: LeadStatus) => void;
   deleteLead: (leadId: string) => void;
   addLead: (newLeadData: Omit<Lead, 'id' | 'avatar' | 'activity'>) => void;
   editLead: (updatedLead: Lead) => void;
-  reorderLeads: (activeId: string, overId: string) => void;
   addNoteToLead: (leadId: string, noteText: string) => void;
+  handleLeadDragEnd: (active: { id: string, data: React.MutableRefObject<any> }, over: { id: string, data: React.MutableRefObject<any> } | null) => void;
   
   filteredLeads: Lead[];
   setSearchTerm: (term: string) => void;
@@ -51,7 +50,15 @@ const priorityOrder: Record<Priority, number> = {
 export const LeadsProvider: React.FC<AppProviderProps> = ({ children }) => {
   const { user } = useUser();
   const { addToast } = useToast();
-  const [leads, setLeads] = useState<Lead[]>(INITIAL_LEADS);
+  const [leads, setLeads] = useState<Lead[]>(() => {
+    try {
+        const item = window.localStorage.getItem('crm-leads');
+        return item ? JSON.parse(item) : INITIAL_LEADS;
+    } catch (error) {
+        console.error("Error reading leads from localStorage", error);
+        return INITIAL_LEADS;
+    }
+  });
   const [searchTerm, setSearchTerm] = useState('');
   const [leadToDelete, setLeadToDelete] = useState<string | null>(null);
   
@@ -73,6 +80,14 @@ export const LeadsProvider: React.FC<AppProviderProps> = ({ children }) => {
       return [];
     }
   });
+
+  useEffect(() => {
+    try {
+        window.localStorage.setItem('crm-leads', JSON.stringify(leads));
+    } catch (error) {
+        console.error("Error saving leads to localStorage", error);
+    }
+  }, [leads]);
 
   const createActivity = (type: LeadActivity['type'], details: string): LeadActivity => ({
     id: `act-${Date.now()}`,
@@ -100,37 +115,79 @@ export const LeadsProvider: React.FC<AppProviderProps> = ({ children }) => {
     });
   };
 
-  const updateLeadStatus = (leadId: string, newStatus: LeadStatus) => {
-    // Defer state update to prevent race condition with dnd-kit's animation/cleanup
-    setTimeout(() => {
-      setLeads(prevLeads => {
-          const leadToUpdate = prevLeads.find(l => l.id === leadId);
-          if (!leadToUpdate || leadToUpdate.status === newStatus) {
-              return prevLeads;
-          }
+    const handleLeadDragEnd = (active: { id: string }, over: { id: string } | null) => {
+        if (!over || active.id === over.id) {
+            return;
+        }
 
-          const oldStatus = leadToUpdate.status;
-          const activity = createActivity('Status Change', `Status changed from ${oldStatus} to ${newStatus}.`);
+        setLeads((prevLeads) => {
+            const activeId = String(active.id);
+            const overId = String(over.id);
 
-          addToast(`Lead moved from ${oldStatus} to ${newStatus}`, 'info');
+            const activeIndex = prevLeads.findIndex((l) => l.id === activeId);
+            const overIndex = prevLeads.findIndex((l) => l.id === overId);
 
-          return prevLeads.map(lead =>
-              lead.id === leadId
-                  ? { ...lead, status: newStatus, activity: [activity, ...lead.activity] }
-                  : lead
-          );
-      });
-    }, 0);
-  };
-  
-  const reorderLeads = (activeId: string, overId: string) => {
-    setLeads(prevLeads => {
-        const activeIndex = prevLeads.findIndex(l => l.id === activeId);
-        const overIndex = prevLeads.findIndex(l => l.id === overId);
-        if (activeIndex === -1 || overIndex === -1) return prevLeads;
-        return arrayMove(prevLeads, activeIndex, overIndex);
-    });
-  };
+            const activeLead = prevLeads[activeIndex];
+            if (!activeLead) return prevLeads;
+
+            const overIsAColumn = KANBAN_COLUMNS.some((c) => c.id === overId);
+            const newStatus = overIsAColumn
+                ? (overId as LeadStatus)
+                : overIndex !== -1
+                ? prevLeads[overIndex].status
+                : null;
+
+            if (!newStatus) return prevLeads;
+
+            // CASE 1: Reordering within the same column.
+            if (newStatus === activeLead.status) {
+                if (overIndex === -1) return prevLeads;
+                return arrayMove(prevLeads, activeIndex, overIndex);
+            }
+
+            // CASE 2: Moving to a new column.
+            const updatedLead = {
+                ...activeLead,
+                status: newStatus,
+                activity: [
+                    createActivity(
+                        'Status Change',
+                        `Status changed from ${activeLead.status} to ${newStatus}`
+                    ),
+                    ...activeLead.activity,
+                ],
+            };
+            addToast(`Lead moved to ${newStatus}`, 'info');
+
+            const remainingLeads = prevLeads.filter((l) => l.id !== activeId);
+            
+            let insertionIndex;
+
+            if (overIsAColumn) {
+                 // Dropped on an empty column. Place it logically based on column order.
+                const columnOrder = KANBAN_COLUMNS.map(c => c.id);
+                const newStatusOrderIndex = columnOrder.indexOf(newStatus);
+                
+                let lastRelevantIndex = -1;
+                 // Find the last item that is in the new column's preceding columns.
+                for (let i = remainingLeads.length - 1; i >= 0; i--) {
+                    const currentStatusOrderIndex = columnOrder.indexOf(remainingLeads[i].status);
+                    if (currentStatusOrderIndex < newStatusOrderIndex) {
+                        lastRelevantIndex = i;
+                        break;
+                    }
+                }
+                insertionIndex = lastRelevantIndex + 1;
+            } else {
+                // Dropped on another lead card. Find its new index in the filtered array.
+                const overLeadInRemaining = remainingLeads.findIndex((l) => l.id === overId);
+                insertionIndex = overLeadInRemaining;
+            }
+
+            remainingLeads.splice(insertionIndex, 0, updatedLead);
+            return remainingLeads;
+        });
+    };
 
   const deleteLead = (leadId: string) => {
     setLeads(prevLeads => prevLeads.filter(lead => lead.id !== leadId));
@@ -147,13 +204,16 @@ export const LeadsProvider: React.FC<AppProviderProps> = ({ children }) => {
   }
   
   const editLead = (updatedLead: Lead) => {
+    let leadName = '';
     setLeads(prev => prev.map(lead => {
         if (lead.id === updatedLead.id) {
+            leadName = updatedLead.name;
             const activity = createActivity('Edited', 'Lead details were updated.');
             return {...updatedLead, activity: [activity, ...updatedLead.activity]};
         }
         return lead;
     }));
+    addToast(`Lead "${leadName}" updated successfully!`, 'success');
   }
 
   const addNoteToLead = (leadId: string, noteText: string) => {
@@ -240,12 +300,11 @@ export const LeadsProvider: React.FC<AppProviderProps> = ({ children }) => {
   return (
     <LeadsContext.Provider value={{ 
         leads, 
-        updateLeadStatus, 
         deleteLead,
         addLead,
         editLead,
-        reorderLeads,
         addNoteToLead,
+        handleLeadDragEnd,
         filteredLeads, 
         setSearchTerm, 
         searchTerm, 

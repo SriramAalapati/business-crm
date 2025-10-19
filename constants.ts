@@ -1,4 +1,4 @@
-import { Lead, LeadStatus, KanbanColumn, Agent, User } from './types';
+import { Lead, LeadStatus, KanbanColumn, Agent, User, Task, TaskStatus, LeadSource } from './types';
 
 export const KANBAN_COLUMNS: KanbanColumn[] = [
     { id: LeadStatus.NEW, title: 'New' },
@@ -29,7 +29,9 @@ export const ALL_USERS: User[] = [
 ];
 
 
-export const ASSIGNEES = INITIAL_AGENTS.map(agent => agent.name);
+export const ASSIGNEES = [...INITIAL_AGENTS.map(agent => agent.name), 'Admin'];
+
+const sources: LeadSource[] = ['Website', 'Referral', 'Cold Call', 'Event'];
 
 export const INITIAL_LEADS: Lead[] = [
   {
@@ -44,6 +46,7 @@ export const INITIAL_LEADS: Lead[] = [
     assignedTo: 'Alice',
     avatar: 'https://picsum.photos/seed/lead-1/40/40',
     notes: 'Initial contact made. Interested in our premium package.',
+    source: sources[0],
     activity: [
       { id: 'act-1-1', type: 'Created', user: 'Admin', timestamp: '2023-10-01T10:00:00Z', details: 'Lead was created.'}
     ]
@@ -59,6 +62,7 @@ export const INITIAL_LEADS: Lead[] = [
     followUpDate: '2023-10-12',
     assignedTo: 'Bob',
     avatar: 'https://picsum.photos/seed/lead-2/40/40',
+    source: sources[1],
     activity: [
       { id: 'act-2-1', type: 'Created', user: 'Admin', timestamp: '2023-09-28T11:30:00Z', details: 'Lead was created.'},
       { id: 'act-2-2', type: 'Status Change', user: 'Bob', timestamp: '2023-09-29T15:00:00Z', details: 'Status changed from New to Contacted.'},
@@ -76,6 +80,7 @@ export const INITIAL_LEADS: Lead[] = [
     assignedTo: 'Alice',
     avatar: 'https://picsum.photos/seed/lead-3/40/40',
     notes: 'Demo scheduled for next week. Key decision maker will be present.',
+    source: sources[2],
     activity: [
         { id: 'act-3-1', type: 'Created', user: 'Admin', timestamp: '2023-09-25T09:00:00Z', details: 'Lead was created.'},
         { id: 'act-3-2', type: 'Status Change', user: 'Alice', timestamp: '2023-09-26T14:20:00Z', details: 'Status changed from New to Contacted.'},
@@ -92,6 +97,7 @@ export const INITIAL_LEADS: Lead[] = [
     contactedDate: '2023-09-20',
     assignedTo: 'Charlie',
     avatar: 'https://picsum.photos/seed/lead-4/40/40',
+    source: sources[3],
      activity: [
         { id: 'act-4-1', type: 'Created', user: 'Admin', timestamp: '2023-09-20T16:00:00Z', details: 'Lead was created.'},
      ]
@@ -106,6 +112,7 @@ export const INITIAL_LEADS: Lead[] = [
     contactedDate: '2023-08-15',
     assignedTo: 'Bob',
     avatar: 'https://picsum.photos/seed/lead-5/40/40',
+    source: sources[0],
     activity: [
         { id: 'act-5-1', type: 'Created', user: 'Admin', timestamp: '2023-08-15T12:00:00Z', details: 'Lead was created.'},
         { id: 'act-5-2', type: 'Status Change', user: 'Bob', timestamp: '2023-09-01T18:00:00Z', details: 'Status changed from Qualified to Closed Won.'},
@@ -122,6 +129,7 @@ export const INITIAL_LEADS: Lead[] = [
     assignedTo: 'Alice',
     avatar: 'https://picsum.photos/seed/lead-6/40/40',
     notes: 'Chose a competitor based on price.',
+    source: sources[1],
     activity: [
         { id: 'act-6-1', type: 'Created', user: 'Admin', timestamp: '2023-09-18T13:45:00Z', details: 'Lead was created.'},
         { id: 'act-6-2', type: 'Status Change', user: 'Alice', timestamp: '2023-09-22T11:00:00Z', details: 'Status changed from Contacted to Closed Lost.'},
@@ -138,6 +146,7 @@ export const INITIAL_LEADS: Lead[] = [
     followUpDate: '2023-10-17',
     assignedTo: 'Charlie',
     avatar: 'https://picsum.photos/seed/lead-7/40/40',
+    source: sources[2],
     activity: [
         { id: 'act-7-1', type: 'Created', user: 'Admin', timestamp: '2023-10-02T09:30:00Z', details: 'Lead was created.'},
     ]
@@ -154,6 +163,7 @@ export const INITIAL_LEADS: Lead[] = [
     assignedTo: 'Bob',
     avatar: 'https://picsum.photos/seed/lead-8/40/40',
     notes: 'Needs a custom solution. Engineering team has been looped in.',
+    source: sources[3],
     activity: [
       { id: 'act-8-1', type: 'Created', user: 'Admin', timestamp: '2023-09-30T14:00:00Z', details: 'Lead was created.'},
       { id: 'act-8-2', type: 'Note Added', user: 'Bob', timestamp: '2023-10-01T16:00:00Z', details: 'Added a note.'},
@@ -170,6 +180,7 @@ export const INITIAL_LEADS: Lead[] = [
     followUpDate: '2023-10-18',
     assignedTo: 'Diana',
     avatar: 'https://picsum.photos/seed/lead-9/40/40',
+    source: sources[0],
     activity: [
         { id: 'act-9-1', type: 'Created', user: 'Admin', timestamp: '2023-10-03T10:15:00Z', details: 'Lead was created.'},
     ]
@@ -185,6 +196,7 @@ export const INITIAL_LEADS: Lead[] = [
     followUpDate: '2023-10-20',
     assignedTo: 'Diana',
     avatar: 'https://picsum.photos/seed/lead-10/40/40',
+    source: sources[1],
     activity: [
         { id: 'act-10-1', type: 'Created', user: 'Admin', timestamp: '2023-10-05T11:00:00Z', details: 'Lead was created.'},
     ]
@@ -200,6 +212,7 @@ export const INITIAL_LEADS: Lead[] = [
     followUpDate: '2023-10-21',
     assignedTo: 'Alice',
     avatar: 'https://picsum.photos/seed/lead-11/40/40',
+    source: sources[2],
     activity: [
       { id: 'act-11-1', type: 'Created', user: 'Admin', timestamp: '2023-10-06T14:00:00Z', details: 'Lead was created.' }
     ]
@@ -215,6 +228,7 @@ export const INITIAL_LEADS: Lead[] = [
     followUpDate: '2023-10-22',
     assignedTo: 'Charlie',
     avatar: 'https://picsum.photos/seed/lead-12/40/40',
+    source: sources[3],
     activity: [
       { id: 'act-12-1', type: 'Created', user: 'Admin', timestamp: '2023-10-07T09:00:00Z', details: 'Lead was created.' },
       { id: 'act-12-2', type: 'Status Change', user: 'Charlie', timestamp: '2023-10-08T11:00:00Z', details: 'Status changed from New to Contacted.' }
@@ -230,6 +244,7 @@ export const INITIAL_LEADS: Lead[] = [
     contactedDate: '2023-09-05',
     assignedTo: 'Diana',
     avatar: 'https://picsum.photos/seed/lead-13/40/40',
+    source: sources[0],
     activity: [
       { id: 'act-13-1', type: 'Created', user: 'Admin', timestamp: '2023-09-05T13:00:00Z', details: 'Lead was created.' },
       { id: 'act-13-2', type: 'Status Change', user: 'Diana', timestamp: '2023-09-25T17:00:00Z', details: 'Status changed from Qualified to Closed Won.' }
@@ -246,6 +261,7 @@ export const INITIAL_LEADS: Lead[] = [
     followUpDate: '2023-10-16',
     assignedTo: 'Admin',
     avatar: 'https://picsum.photos/seed/lead-14/40/40',
+    source: sources[1],
     activity: [
       { id: 'act-14-1', type: 'Created', user: 'Admin', timestamp: '2023-10-01T18:00:00Z', details: 'Lead was created.' },
       { id: 'act-14-2', type: 'Status Change', user: 'Admin', timestamp: '2023-10-04T10:00:00Z', details: 'Status changed from Contacted to Qualified.' }
@@ -262,6 +278,7 @@ export const INITIAL_LEADS: Lead[] = [
     followUpDate: '2023-10-25',
     assignedTo: 'Bob',
     avatar: 'https://picsum.photos/seed/lead-15/40/40',
+    source: sources[2],
     activity: [
       { id: 'act-15-1', type: 'Created', user: 'Admin', timestamp: '2023-10-10T12:30:00Z', details: 'Lead was created.' }
     ]
@@ -277,6 +294,7 @@ export const INITIAL_LEADS: Lead[] = [
     followUpDate: '2023-10-26',
     assignedTo: 'Diana',
     avatar: 'https://picsum.photos/seed/lead-16/40/40',
+    source: sources[3],
     activity: [{ id: 'act-16-1', type: 'Created', user: 'Admin', timestamp: '2023-10-11T11:00:00Z', details: 'Lead was created.' }]
   },
   {
@@ -290,6 +308,7 @@ export const INITIAL_LEADS: Lead[] = [
     followUpDate: '2023-10-27',
     assignedTo: 'Charlie',
     avatar: 'https://picsum.photos/seed/lead-17/40/40',
+    source: sources[0],
     activity: [{ id: 'act-17-1', type: 'Created', user: 'Admin', timestamp: '2023-10-12T15:00:00Z', details: 'Lead was created.' }]
   },
   {
@@ -303,6 +322,7 @@ export const INITIAL_LEADS: Lead[] = [
     followUpDate: '2023-10-24',
     assignedTo: 'Alice',
     avatar: 'https://picsum.photos/seed/lead-18/40/40',
+    source: sources[1],
     activity: [{ id: 'act-18-1', type: 'Created', user: 'Admin', timestamp: '2023-10-09T16:30:00Z', details: 'Lead was created.' }]
   },
   {
@@ -315,6 +335,7 @@ export const INITIAL_LEADS: Lead[] = [
     contactedDate: '2023-09-15',
     assignedTo: 'Bob',
     avatar: 'https://picsum.photos/seed/lead-19/40/40',
+    source: sources[2],
     activity: [{ id: 'act-19-1', type: 'Created', user: 'Admin', timestamp: '2023-09-15T10:00:00Z', details: 'Lead was created.' }]
   },
   {
@@ -328,6 +349,56 @@ export const INITIAL_LEADS: Lead[] = [
     followUpDate: '2023-10-28',
     assignedTo: 'Admin',
     avatar: 'https://picsum.photos/seed/lead-20/40/40',
+    source: sources[3],
     activity: [{ id: 'act-20-1', type: 'Created', user: 'Admin', timestamp: '2023-10-13T14:45:00Z', details: 'Lead was created.' }]
+  }
+];
+
+export const INITIAL_TASKS: Task[] = [
+  {
+    id: 'task-1',
+    title: 'Prepare demo for Stark Industries',
+    dueDate: new Date(new Date().setDate(new Date().getDate() + 2)).toISOString().split('T')[0],
+    priority: 'High',
+    status: TaskStatus.IN_PROGRESS,
+    assignedTo: 'Alice',
+    relatedLeadId: 'lead-3',
+    notes: 'Focus on the custom integration capabilities.'
+  },
+  {
+    id: 'task-2',
+    title: 'Follow up call with Globex Corp.',
+    dueDate: new Date(new Date().setDate(new Date().getDate() + 5)).toISOString().split('T')[0],
+    priority: 'Medium',
+    status: TaskStatus.TODO,
+    assignedTo: 'Bob',
+    relatedLeadId: 'lead-2',
+  },
+  {
+    id: 'task-3',
+    title: 'Send proposal to Wayne Enterprises',
+    dueDate: new Date(new Date().setDate(new Date().getDate() - 1)).toISOString().split('T')[0],
+    priority: 'High',
+    status: TaskStatus.DONE,
+    assignedTo: 'Charlie',
+    relatedLeadId: 'lead-4'
+  },
+  {
+    id: 'task-4',
+    title: 'Schedule initial contact with InGen',
+    dueDate: new Date(new Date().setDate(new Date().getDate() + 8)).toISOString().split('T')[0],
+    priority: 'Low',
+    status: TaskStatus.TODO,
+    assignedTo: 'Diana',
+    relatedLeadId: 'lead-10'
+  },
+  {
+    id: 'task-5',
+    title: 'Finalize contract with Monsters, Inc.',
+    dueDate: new Date(new Date().setDate(new Date().getDate() + 10)).toISOString().split('T')[0],
+    priority: 'High',
+    status: TaskStatus.TODO,
+    assignedTo: 'Charlie',
+    relatedLeadId: 'lead-12'
   }
 ];

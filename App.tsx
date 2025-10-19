@@ -8,6 +8,8 @@ import Calendar from './pages/Calendar';
 import UserDetails from './pages/UserDetails';
 import Login from './pages/Login';
 import ManageAgents from './pages/ManageAgents';
+import Reports from './pages/Reports';
+import Tasks from './pages/Tasks';
 
 const App: React.FC = () => {
   const { user } = useUser();
@@ -24,6 +26,8 @@ const App: React.FC = () => {
           <Route path="/" element={<Layout />}>
             <Route index element={<Navigate to="/dashboard" />} />
             <Route path="dashboard" element={<Dashboard />} />
+            <Route path="reports" element={<Reports />} />
+            <Route path="tasks" element={<Tasks />} />
             <Route path="leads" element={<Leads />} />
             <Route path="calendar" element={<Calendar />} />
             <Route path="user-details" element={<UserDetails />} />

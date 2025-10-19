@@ -1,6 +1,6 @@
 import React from 'react';
 import { NavLink } from 'react-router-dom';
-import { FiGrid, FiUsers, FiCalendar, FiUser, FiBriefcase, FiChevronsLeft, FiChevronsRight } from 'react-icons/fi';
+import { FiGrid, FiUsers, FiCalendar, FiUser, FiBriefcase, FiChevronsLeft, FiChevronsRight, FiTrendingUp, FiCheckSquare } from 'react-icons/fi';
 import { useUser } from '../contexts/UserContext';
 import Logo from './Logo';
 
@@ -14,6 +14,8 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, setIsOpen }) => {
     
     const baseNavItems = [
         { to: '/dashboard', icon: <FiGrid className="w-6 h-6" />, label: 'Dashboard' },
+        { to: '/reports', icon: <FiTrendingUp className="w-6 h-6" />, label: 'Reports' },
+        { to: '/tasks', icon: <FiCheckSquare className="w-6 h-6" />, label: 'Tasks' },
         { to: '/calendar', icon: <FiCalendar className="w-6 h-6" />, label: 'Calendar' },
         { to: '/user-details', icon: <FiUser className="w-6 h-6" />, label: 'User Details' },
     ];
@@ -27,7 +29,14 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, setIsOpen }) => {
         { to: '/leads', icon: <FiUsers className="w-6 h-6" />, label: 'My Pipeline' },
        ];
     
-    const navItems = [baseNavItems[0], ...roleBasedNavItems, ...baseNavItems.slice(1)];
+    const navItems = [
+        baseNavItems[0], // Dashboard
+        baseNavItems[1], // Reports
+        baseNavItems[2], // Tasks
+        ...roleBasedNavItems, 
+        baseNavItems[3], // Calendar
+        baseNavItems[4], // User Details
+    ];
 
 
     const activeLinkClass = "bg-primary-500 text-white";
