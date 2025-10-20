@@ -1,4 +1,4 @@
-import { Lead, LeadStatus, KanbanColumn, Agent, User, Task, TaskStatus, LeadSource } from './types';
+import { Lead, LeadStatus, KanbanColumn, Agent, User, Task, TaskStatus, LeadSource, Opportunity, OpportunityStage } from './types';
 
 export const KANBAN_COLUMNS: KanbanColumn[] = [
     { id: LeadStatus.NEW, title: 'New' },
@@ -6,6 +6,16 @@ export const KANBAN_COLUMNS: KanbanColumn[] = [
     { id: LeadStatus.QUALIFIED, title: 'Qualified' },
     { id: LeadStatus.WON, title: 'Closed Won' },
     { id: LeadStatus.LOST, title: 'Closed Lost' },
+];
+
+export const OPPORTUNITY_STAGES_CONFIG: { id: OpportunityStage, title: string, probability: number }[] = [
+    { id: OpportunityStage.PROSPECTING, title: 'Prospecting', probability: 10 },
+    { id: OpportunityStage.QUALIFICATION, title: 'Qualification', probability: 25 },
+    { id: OpportunityStage.NEEDS_ANALYSIS, title: 'Needs Analysis', probability: 40 },
+    { id: OpportunityStage.PROPOSAL, title: 'Value Proposition', probability: 60 },
+    { id: OpportunityStage.NEGOTIATION, title: 'Negotiation/Review', probability: 80 },
+    { id: OpportunityStage.WON, title: 'Closed Won', probability: 100 },
+    { id: OpportunityStage.LOST, title: 'Closed Lost', probability: 0 },
 ];
 
 const ADMIN_USER: User = { 
@@ -101,22 +111,6 @@ export const INITIAL_LEADS: Lead[] = [
      activity: [
         { id: 'act-4-1', type: 'Created', user: 'Admin', timestamp: '2023-09-20T16:00:00Z', details: 'Lead was created.'},
      ]
-  },
-  {
-    id: 'lead-5',
-    name: 'David Brown',
-    company: 'Cyberdyne Systems',
-    priority: 'Medium',
-    dealValue: 1500000,
-    status: LeadStatus.WON,
-    contactedDate: '2023-08-15',
-    assignedTo: 'Bob',
-    avatar: 'https://picsum.photos/seed/lead-5/40/40',
-    source: sources[0],
-    activity: [
-        { id: 'act-5-1', type: 'Created', user: 'Admin', timestamp: '2023-08-15T12:00:00Z', details: 'Lead was created.'},
-        { id: 'act-5-2', type: 'Status Change', user: 'Bob', timestamp: '2023-09-01T18:00:00Z', details: 'Status changed from Qualified to Closed Won.'},
-    ]
   },
     {
     id: 'lead-6',
@@ -235,22 +229,6 @@ export const INITIAL_LEADS: Lead[] = [
     ]
   },
   {
-    id: 'lead-13',
-    name: 'Thomas Taylor',
-    company: 'CHOAM',
-    priority: 'Low',
-    dealValue: 450000,
-    status: LeadStatus.WON,
-    contactedDate: '2023-09-05',
-    assignedTo: 'Diana',
-    avatar: 'https://picsum.photos/seed/lead-13/40/40',
-    source: sources[0],
-    activity: [
-      { id: 'act-13-1', type: 'Created', user: 'Admin', timestamp: '2023-09-05T13:00:00Z', details: 'Lead was created.' },
-      { id: 'act-13-2', type: 'Status Change', user: 'Diana', timestamp: '2023-09-25T17:00:00Z', details: 'Status changed from Qualified to Closed Won.' }
-    ]
-  },
-  {
     id: 'lead-14',
     name: 'Karen Moore',
     company: 'Weyland-Yutani',
@@ -352,6 +330,108 @@ export const INITIAL_LEADS: Lead[] = [
     source: sources[3],
     activity: [{ id: 'act-20-1', type: 'Created', user: 'Admin', timestamp: '2023-10-13T14:45:00Z', details: 'Lead was created.' }]
   }
+];
+
+export const INITIAL_OPPORTUNITIES: Opportunity[] = [
+  {
+    id: 'opp-1',
+    name: 'Cyberdyne Integration',
+    company: 'Cyberdyne Systems',
+    dealValue: 1500000,
+    stage: OpportunityStage.WON,
+    probability: 100,
+    expectedCloseDate: '2023-09-30',
+    assignedTo: 'Bob',
+    avatar: 'https://picsum.photos/seed/lead-5/40/40',
+    activity: [
+      { id: 'act-opp-1-1', type: 'Created', user: 'Bob', timestamp: '2023-08-20T10:00:00Z', details: 'Opportunity created from qualified lead.'},
+      { id: 'act-opp-1-2', type: 'Status Change', user: 'Bob', timestamp: '2023-09-15T10:00:00Z', details: 'Stage changed to Closed Won.'},
+    ],
+  },
+  {
+    id: 'opp-2',
+    name: 'Wayne Tower Security Upgrade',
+    company: 'Wayne Enterprises',
+    dealValue: 2500000,
+    stage: OpportunityStage.NEGOTIATION,
+    probability: 80,
+    expectedCloseDate: new Date(new Date().setDate(new Date().getDate() + 15)).toISOString().split('T')[0],
+    assignedTo: 'Charlie',
+    avatar: 'https://picsum.photos/seed/lead-4/40/40',
+    activity: [
+      { id: 'act-opp-2-1', type: 'Created', user: 'Charlie', timestamp: '2023-09-22T10:00:00Z', details: 'Opportunity created from qualified lead.'},
+    ],
+  },
+  {
+    id: 'opp-3',
+    name: 'Stark Expo Presentation System',
+    company: 'Stark Industries',
+    dealValue: 750000,
+    stage: OpportunityStage.PROPOSAL,
+    probability: 60,
+    expectedCloseDate: new Date(new Date().setDate(new Date().getDate() + 25)).toISOString().split('T')[0],
+    assignedTo: 'Alice',
+    avatar: 'https://picsum.photos/seed/lead-3/40/40',
+    activity: [
+      { id: 'act-opp-3-1', type: 'Created', user: 'Alice', timestamp: '2023-10-01T10:00:00Z', details: 'Opportunity created from qualified lead.'},
+    ],
+  },
+  {
+    id: 'opp-4',
+    name: 'Weyland-Yutani Terraforming Contract',
+    company: 'Weyland-Yutani',
+    dealValue: 5500000,
+    stage: OpportunityStage.QUALIFICATION,
+    probability: 25,
+    expectedCloseDate: new Date(new Date().setDate(new Date().getDate() + 45)).toISOString().split('T')[0],
+    assignedTo: 'Admin',
+    avatar: 'https://picsum.photos/seed/lead-14/40/40',
+    activity: [
+      { id: 'act-opp-4-1', type: 'Created', user: 'Admin', timestamp: '2023-10-05T10:00:00Z', details: 'Opportunity created from qualified lead.'},
+    ],
+  },
+  {
+    id: 'opp-5',
+    name: 'CHOAM Spice Mining Fleet',
+    company: 'CHOAM',
+    dealValue: 450000,
+    stage: OpportunityStage.WON,
+    probability: 100,
+    expectedCloseDate: '2023-10-01',
+    assignedTo: 'Diana',
+    avatar: 'https://picsum.photos/seed/lead-13/40/40',
+    activity: [
+        { id: 'act-opp-5-1', type: 'Created', user: 'Diana', timestamp: '2023-09-10T10:00:00Z', details: 'Opportunity created from qualified lead.'},
+    ]
+  },
+  {
+    id: 'opp-6',
+    name: 'Gekko & Co Trading Platform',
+    company: 'Gekko & Co',
+    dealValue: 1800000,
+    stage: OpportunityStage.PROSPECTING,
+    probability: 10,
+    expectedCloseDate: new Date(new Date().setDate(new Date().getDate() + 60)).toISOString().split('T')[0],
+    assignedTo: 'Bob',
+    avatar: 'https://picsum.photos/seed/lead-8/40/40',
+    activity: [
+        { id: 'act-opp-6-1', type: 'Created', user: 'Bob', timestamp: '2023-10-10T10:00:00Z', details: 'New opportunity added.'},
+    ]
+  },
+   {
+    id: 'opp-7',
+    name: 'Omni Corp Security Robots',
+    company: 'Omni Corp',
+    dealValue: 4200000,
+    stage: OpportunityStage.NEEDS_ANALYSIS,
+    probability: 40,
+    expectedCloseDate: new Date(new Date().setDate(new Date().getDate() + 35)).toISOString().split('T')[0],
+    assignedTo: 'Alice',
+    avatar: 'https://picsum.photos/seed/lead-18/40/40',
+    activity: [
+        { id: 'act-opp-7-1', type: 'Created', user: 'Alice', timestamp: '2023-10-11T10:00:00Z', details: 'New opportunity added.'},
+    ]
+  },
 ];
 
 export const INITIAL_TASKS: Task[] = [

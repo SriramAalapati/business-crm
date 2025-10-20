@@ -1,19 +1,21 @@
 import React, { useMemo } from 'react';
 import { useLeads } from '../contexts/LeadsContext';
-import { Lead, LeadStatus, LeadSource } from '../types';
+import { Lead, LeadStatus, LeadSource, OpportunityStage } from '../types';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, PieChart, Pie, Cell, LineChart, Line } from 'recharts';
-import { FiTrendingUp, FiTarget, FiUsers, FiPieChart } from 'react-icons/fi';
+import { FiTrendingUp, FiTarget, FiUsers, FiPieChart, FiBarChart2 } from 'react-icons/fi';
 import { INITIAL_AGENTS } from '../constants';
+import { useOpportunities } from '../contexts/OpportunitiesContext';
 
 const Reports: React.FC = () => {
     const { leads } = useLeads();
+    const { opportunities } = useOpportunities();
     
     const salesPerformanceData = useMemo(() => {
         const salesByMonth: { [key: string]: number } = {};
-        leads
-            .filter(l => l.status === LeadStatus.WON)
+        opportunities
+            .filter(l => l.stage === OpportunityStage.WON)
             .forEach(l => {
-                const month = new Date(l.contactedDate).toLocaleString('default', { month: 'short', year: 'numeric' });
+                const month = new Date(l.expectedCloseDate).toLocaleString('default', { month: 'short', year: 'numeric' });
                 salesByMonth[month] = (salesByMonth[month] || 0) + l.dealValue;
             });
         
@@ -21,7 +23,7 @@ const Reports: React.FC = () => {
             .map(([name, value]) => ({ name, value }))
             .sort((a, b) => new Date(a.name).getTime() - new Date(b.name).getTime());
 
-    }, [leads]);
+    }, [opportunities]);
 
     const leadSourceData = useMemo(() => {
         const sourceCounts = leads.reduce((acc, lead) => {
@@ -33,15 +35,15 @@ const Reports: React.FC = () => {
     
     const agentPerformanceData = useMemo(() => {
         const performance = INITIAL_AGENTS.map(agent => {
-            const wonLeads = leads.filter(l => l.assignedTo === agent.name && l.status === LeadStatus.WON);
+            const wonOpps = opportunities.filter(o => o.assignedTo === agent.name && o.stage === OpportunityStage.WON);
             return {
                 name: agent.name,
-                dealsWon: wonLeads.length,
-                totalValue: wonLeads.reduce((sum, l) => sum + l.dealValue, 0)
+                dealsWon: wonOpps.length,
+                totalValue: wonOpps.reduce((sum, l) => sum + l.dealValue, 0)
             }
         });
         return performance.sort((a,b) => b.totalValue - a.totalValue);
-    }, [leads]);
+    }, [opportunities]);
 
     const conversionRates = useMemo(() => {
         const total = leads.length;
@@ -57,6 +59,22 @@ const Reports: React.FC = () => {
             { stage: 'Won', count: won, rate: parseFloat(((won / total) * 100).toFixed(1)) },
         ]
     }, [leads]);
+
+    const forecastByMonthData = useMemo(() => {
+        const forecastByMonth: { [key: string]: number } = {};
+        opportunities
+            .filter(o => o.stage !== OpportunityStage.WON && o.stage !== OpportunityStage.LOST)
+            .forEach(o => {
+                const month = new Date(o.expectedCloseDate).toLocaleString('default', { month: 'short', year: 'numeric' });
+                const forecastValue = o.dealValue * (o.probability / 100);
+                forecastByMonth[month] = (forecastByMonth[month] || 0) + forecastValue;
+            });
+        
+        return Object.entries(forecastByMonth)
+            .map(([name, value]) => ({ name, value }))
+            .sort((a, b) => new Date(a.name).getTime() - new Date(b.name).getTime());
+
+    }, [opportunities]);
 
     const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042'];
 
@@ -84,6 +102,19 @@ const Reports: React.FC = () => {
                         <Legend />
                         <Line type="monotone" dataKey="value" name="Sales Value" stroke="#3b82f6" strokeWidth={2} />
                     </LineChart>
+                </ResponsiveContainer>
+            </ReportCard>
+            
+            <ReportCard title="Revenue Forecast by Close Date" icon={<FiBarChart2 className="w-6 h-6"/>}>
+                <ResponsiveContainer width="100%" height={300}>
+                    <BarChart data={forecastByMonthData}>
+                        <CartesianGrid strokeDasharray="3 3" strokeOpacity={0.2}/>
+                        <XAxis dataKey="name" />
+                        <YAxis tickFormatter={(value) => `₹${Number(value / 1000).toFixed(0)}k`} />
+                        <Tooltip contentStyle={{ backgroundColor: 'rgba(31, 41, 55, 0.9)', borderColor: 'rgba(55, 65, 81, 1)', color: '#fff' }} formatter={(value) => `₹${Number(value).toLocaleString('en-IN')}`} />
+                        <Legend />
+                        <Bar dataKey="value" name="Forecasted Revenue" fill="#8884d8" />
+                    </BarChart>
                 </ResponsiveContainer>
             </ReportCard>
 

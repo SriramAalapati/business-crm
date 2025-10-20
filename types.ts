@@ -52,6 +52,30 @@ export interface Lead {
   source: LeadSource;
 }
 
+export enum OpportunityStage {
+  PROSPECTING = 'Prospecting',
+  QUALIFICATION = 'Qualification',
+  NEEDS_ANALYSIS = 'Needs Analysis',
+  PROPOSAL = 'Value Proposition',
+  NEGOTIATION = 'Negotiation/Review',
+  WON = 'Closed Won',
+  LOST = 'Closed Lost',
+}
+
+export interface Opportunity {
+  id: string;
+  name: string;
+  company: string;
+  dealValue: number;
+  stage: OpportunityStage;
+  probability: number; // Percentage
+  expectedCloseDate: string; // ISO date string
+  assignedTo: string;
+  activity: LeadActivity[]; // Re-using LeadActivity for simplicity
+  avatar: string; // From the related contact/company
+}
+
+
 export interface KanbanColumn {
     id: LeadStatus;
     title: string;

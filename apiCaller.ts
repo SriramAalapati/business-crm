@@ -36,7 +36,7 @@ const apiCaller = async <T,>(
   // This block simulates the backend response. In a real app, you would
   // remove this and let the fetch call go to your server.
   console.log(`[API Caller MOCK] ${method} ${path}`, { body });
-  const response = DUMMY_API_RESPONSE(method, path, body);
+  const response = DUMMY_API_RESPONSE(method, path, body, headers);
   if (response.status >= 400) {
     console.error(`[API Caller MOCK] Error ${response.status}:`, response.data);
     throw new Error(response.data.message || 'An API error occurred');

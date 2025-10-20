@@ -1,15 +1,29 @@
 // api/dummyApiData.ts
-import { ALL_USERS, INITIAL_LEADS, INITIAL_TASKS, INITIAL_AGENTS } from '../constants';
-import { User, Lead, Task, Agent } from '../types';
+import { ALL_USERS, INITIAL_LEADS, INITIAL_TASKS, INITIAL_AGENTS, INITIAL_OPPORTUNITIES, OPPORTUNITY_STAGES_CONFIG } from '../constants';
+import { User, Lead, Task, Agent, LeadActivity, Opportunity, OpportunityStage } from '../types';
 
 let leads: Lead[] = JSON.parse(JSON.stringify(INITIAL_LEADS));
 let tasks: Task[] = JSON.parse(JSON.stringify(INITIAL_TASKS));
 let agents: Agent[] = JSON.parse(JSON.stringify(INITIAL_AGENTS));
+let opportunities: Opportunity[] = JSON.parse(JSON.stringify(INITIAL_OPPORTUNITIES));
 
 const createApiResponse = (data: any, status = 200) => ({
     data,
     status,
 });
+
+const getUserFromToken = (headers?: Headers): string => {
+    if (!headers) return 'System';
+    const authHeader = headers.get('Authorization');
+    if (authHeader && authHeader.startsWith('Bearer dummy-jwt-for-')) {
+        const userName = authHeader.replace('Bearer dummy-jwt-for-', '');
+        const user = ALL_USERS.find(u => u.name.toLowerCase() === userName.toLowerCase());
+        return user ? user.name : 'System';
+    }
+    const adminUser = ALL_USERS.find(u => u.role === 'admin');
+    return adminUser ? adminUser.name : 'System';
+};
+
 
 /**
  * This function simulates a backend API.
@@ -18,9 +32,12 @@ const createApiResponse = (data: any, status = 200) => ({
 export const DUMMY_API_RESPONSE = (
     method: string,
     path: string,
-    body?: Record<string, any> | FormData
+    body?: Record<string, any> | FormData,
+    headers?: Headers,
 ): { data: any; status: number } => {
     
+    const user = getUserFromToken(headers);
+
     // --- AUTH ---
     if (path.startsWith('/auth/login') && method === 'POST') {
         const email = (body as Record<string, any>)?.email?.toLowerCase();
@@ -36,11 +53,16 @@ export const DUMMY_API_RESPONSE = (
     }
     
     if (path.startsWith('/auth/verify') && method === 'GET') {
-        const token = "dummy-jwt-for-admin"; // Hardcoded for session persistence demo
-        const userName = token.replace('dummy-jwt-for-', '');
-        const user = ALL_USERS.find(u => u.name.toLowerCase() === userName);
-        if (user) {
-            return createApiResponse({ user });
+        const tokenHeader = headers?.get('Authorization');
+        let tokenUser: User | undefined;
+        if(tokenHeader) {
+            const token = tokenHeader.replace('Bearer ', '');
+            const userName = token.replace('dummy-jwt-for-', '');
+            tokenUser = ALL_USERS.find(u => u.name.toLowerCase() === userName);
+        }
+        
+        if (tokenUser) {
+            return createApiResponse({ user: tokenUser });
         }
         return createApiResponse({ message: 'Invalid token' }, 401);
     }
@@ -70,7 +92,7 @@ export const DUMMY_API_RESPONSE = (
                   id: `act-${Date.now()}`,
                   type: 'Created',
                   details: 'Lead was created.',
-                  user: 'API User',
+                  user: user,
                   timestamp: new Date().toISOString()
               }]
             };
@@ -81,27 +103,60 @@ export const DUMMY_API_RESPONSE = (
     
     if (path.match(/^\/leads\/lead-\d+$/) && method === 'PUT') {
         const updatedLeadData = body as Lead;
-        let foundLead: Lead | undefined;
-        leads = leads.map(lead => {
-            if (lead.id === updatedLeadData.id) {
-                foundLead = { ...updatedLeadData, activity: [
-                     {
-                        id: `act-${Date.now()}`,
-                        type: 'Edited',
-                        details: 'Lead details were updated.',
-                        user: 'API User',
-                        timestamp: new Date().toISOString()
-                    },
-                    ...updatedLeadData.activity
-                ]};
-                return foundLead;
-            }
-            return lead;
-        });
-        if(foundLead) {
-             return createApiResponse({ lead: foundLead });
+        const leadIndex = leads.findIndex(l => l.id === updatedLeadData.id);
+
+        if (leadIndex === -1) {
+            return createApiResponse({ message: "Lead not found" }, 404);
         }
-        return createApiResponse({ message: "Lead not found" }, 404);
+
+        const originalLead = leads[leadIndex];
+        const newActivities: LeadActivity[] = [];
+        const now = new Date().toISOString();
+
+        const createActivity = (type: LeadActivity['type'], details: string): LeadActivity => ({
+            id: `act-${Date.now()}-${Math.random()}`,
+            type,
+            user,
+            timestamp: now,
+            details
+        });
+
+        if (originalLead.name !== updatedLeadData.name) {
+            newActivities.push(createActivity('Edited', `Name changed from "${originalLead.name}" to "${updatedLeadData.name}".`));
+        }
+        if (originalLead.company !== updatedLeadData.company) {
+            newActivities.push(createActivity('Edited', `Company changed from "${originalLead.company}" to "${updatedLeadData.company}".`));
+        }
+        if (originalLead.status !== updatedLeadData.status) {
+            newActivities.push(createActivity('Status Change', `Status changed from "${originalLead.status}" to "${updatedLeadData.status}".`));
+        }
+        if (originalLead.priority !== updatedLeadData.priority) {
+            newActivities.push(createActivity('Edited', `Priority changed from "${originalLead.priority}" to "${updatedLeadData.priority}".`));
+        }
+        if (originalLead.dealValue !== updatedLeadData.dealValue) {
+            newActivities.push(createActivity('Edited', `Deal Value changed from ₹${originalLead.dealValue.toLocaleString('en-IN')} to ₹${updatedLeadData.dealValue.toLocaleString('en-IN')}.`));
+        }
+        if (originalLead.assignedTo !== updatedLeadData.assignedTo) {
+            newActivities.push(createActivity('Edited', `Assignee changed from "${originalLead.assignedTo}" to "${updatedLeadData.assignedTo}".`));
+        }
+        if (originalLead.source !== updatedLeadData.source) {
+            newActivities.push(createActivity('Edited', `Source changed from "${originalLead.source}" to "${updatedLeadData.source}".`));
+        }
+        if (originalLead.followUpDateTime !== updatedLeadData.followUpDateTime) {
+            const oldDate = originalLead.followUpDateTime ? new Date(originalLead.followUpDateTime).toLocaleString() : 'Not set';
+            const newDate = updatedLeadData.followUpDateTime ? new Date(updatedLeadData.followUpDateTime).toLocaleString() : 'Not set';
+            if (oldDate !== newDate) {
+                 newActivities.push(createActivity('Edited', `Follow-up changed from "${oldDate}" to "${newDate}".`));
+            }
+        }
+        if (originalLead.notes !== updatedLeadData.notes) {
+            newActivities.push(createActivity('Edited', `Notes were updated.`));
+        }
+
+        const finalUpdatedLead = { ...updatedLeadData, activity: [...newActivities, ...originalLead.activity] };
+        leads[leadIndex] = finalUpdatedLead;
+
+        return createApiResponse({ lead: finalUpdatedLead });
     }
 
     if (path.match(/^\/leads\/lead-\d+\/note$/) && method === 'POST') {
@@ -114,7 +169,7 @@ export const DUMMY_API_RESPONSE = (
                     id: `act-${Date.now()}`,
                     type: 'Note Added' as const,
                     details: noteText,
-                    user: 'API User',
+                    user: user,
                     timestamp: new Date().toISOString()
                 };
                 foundLead = { ...lead, activity: [newActivity, ...lead.activity] };
@@ -137,6 +192,82 @@ export const DUMMY_API_RESPONSE = (
         }
         return createApiResponse({ message: "Lead not found" }, 404);
     }
+
+    // --- OPPORTUNITIES ---
+    if (path.startsWith('/opportunities')) {
+        const url = new URL(`http://localhost:3000${path}`);
+        const role = url.searchParams.get('role');
+        const userName = url.searchParams.get('name');
+
+        if (method === 'GET') {
+            if (role === 'agent' && userName) {
+                const agentOpps = opportunities.filter(o => o.assignedTo === userName);
+                return createApiResponse({ opportunities: agentOpps });
+            }
+            return createApiResponse({ opportunities });
+        }
+
+        if (method === 'POST') {
+            const newOppData = body as Omit<Opportunity, 'id' | 'avatar' | 'activity'>;
+            const newOpp: Opportunity = {
+                ...newOppData,
+                id: `opp-${Date.now()}`,
+                avatar: `https://picsum.photos/seed/opp-${Date.now()}/40/40`,
+                activity: [{
+                    id: `act-opp-${Date.now()}`,
+                    type: 'Created',
+                    details: 'Opportunity was created.',
+                    user: user,
+                    timestamp: new Date().toISOString()
+                }]
+            };
+            opportunities = [newOpp, ...opportunities];
+            return createApiResponse({ opportunity: newOpp }, 201);
+        }
+    }
+
+    if (path.match(/^\/opportunities\/opp-\d+$/) && method === 'PUT') {
+        const updatedOppData = body as Opportunity;
+        const oppIndex = opportunities.findIndex(o => o.id === updatedOppData.id);
+        if (oppIndex === -1) {
+            return createApiResponse({ message: "Opportunity not found" }, 404);
+        }
+
+        const originalOpp = opportunities[oppIndex];
+        const newActivities: LeadActivity[] = [];
+        const now = new Date().toISOString();
+
+        if (originalOpp.stage !== updatedOppData.stage) {
+            newActivities.push({
+                id: `act-${Date.now()}`,
+                type: 'Status Change',
+                user,
+                timestamp: now,
+                details: `Stage changed from "${originalOpp.stage}" to "${updatedOppData.stage}".`
+            });
+            // Auto-update probability based on new stage
+            const stageConfig = OPPORTUNITY_STAGES_CONFIG.find(s => s.id === updatedOppData.stage);
+            if (stageConfig) {
+                updatedOppData.probability = stageConfig.probability;
+            }
+        }
+        // Add more detailed activity tracking if needed...
+
+        const finalUpdatedOpp = { ...updatedOppData, activity: [...newActivities, ...originalOpp.activity] };
+        opportunities[oppIndex] = finalUpdatedOpp;
+        return createApiResponse({ opportunity: finalUpdatedOpp });
+    }
+
+    if (path.match(/^\/opportunities\/opp-\d+$/) && method === 'DELETE') {
+        const oppId = path.split('/')[2];
+        const initialLength = opportunities.length;
+        opportunities = opportunities.filter(opp => opp.id !== oppId);
+        if (opportunities.length < initialLength) {
+            return createApiResponse({ message: 'Opportunity deleted successfully' });
+        }
+        return createApiResponse({ message: "Opportunity not found" }, 404);
+    }
+
 
     // --- TASKS ---
      if (path.startsWith('/tasks')) {

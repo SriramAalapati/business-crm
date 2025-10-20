@@ -1,14 +1,15 @@
 import React, { useMemo, useState, useEffect } from 'react';
 import { useLeads } from '../contexts/LeadsContext';
 import { useUser } from '../contexts/UserContext';
-import { Lead, LeadStatus, Priority } from '../types';
+import { Lead, LeadStatus, Opportunity, OpportunityStage, Priority } from '../types';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
-import { FiUsers, FiTrendingUp, FiCheckCircle, FiCalendar, FiZap, FiSettings } from 'react-icons/fi';
+import { FiUsers, FiTrendingUp, FiCheckCircle, FiCalendar, FiZap, FiSettings, FiDollarSign, FiTarget } from 'react-icons/fi';
 import { KANBAN_COLUMNS } from '../constants';
 import DashboardSettingsModal from '../components/DashboardSettingsModal';
+import { useOpportunities } from '../contexts/OpportunitiesContext';
 
 export interface WidgetConfig {
-    id: 'stats' | 'charts' | 'followUps';
+    id: 'stats' | 'pipelineStats' | 'charts' | 'followUps';
     title: string;
     visible: boolean;
 }
@@ -37,13 +38,34 @@ const StatsWidget: React.FC<{ leads: Lead[] }> = ({ leads }) => {
     }, [leads]);
     return (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-            <StatCard icon={<FiUsers className="w-6 h-6 text-white"/>} title="Total Active Leads" value={stats.totalLeads} colorClass="bg-blue-500"/>
+            <StatCard icon={<FiUsers className="w-6 h-6 text-white"/>} title="Active Leads" value={stats.totalLeads} colorClass="bg-blue-500"/>
             <StatCard icon={<FiZap className="w-6 h-6 text-white"/>} title="High-Priority Leads" value={stats.highPriorityLeads} colorClass="bg-red-500"/>
-            <StatCard icon={<FiCheckCircle className="w-6 h-6 text-white"/>} title="Deals Won" value={stats.wonLeads} colorClass="bg-green-500"/>
-            <StatCard icon={<FiTrendingUp className="w-6 h-6 text-white"/>} title="Total Value Won" value={`₹${stats.totalValueWon.toLocaleString('en-IN')}`} colorClass="bg-teal-500"/>
+            <StatCard icon={<FiCheckCircle className="w-6 h-6 text-white"/>} title="Leads Won" value={stats.wonLeads} colorClass="bg-green-500"/>
+            <StatCard icon={<FiTrendingUp className="w-6 h-6 text-white"/>} title="Lead Value Won" value={`₹${stats.totalValueWon.toLocaleString('en-IN')}`} colorClass="bg-teal-500"/>
         </div>
     );
 };
+
+const PipelineStatsWidget: React.FC<{ opportunities: Opportunity[] }> = ({ opportunities }) => {
+    const pipelineStats = useMemo(() => {
+        const openOpps = opportunities.filter(o => o.stage !== OpportunityStage.WON && o.stage !== OpportunityStage.LOST);
+        return {
+            totalOpps: openOpps.length,
+            pipelineValue: openOpps.reduce((sum, opp) => sum + opp.dealValue, 0),
+            forecastedValue: openOpps.reduce((sum, opp) => sum + (opp.dealValue * (opp.probability / 100)), 0),
+            dealsWon: opportunities.filter(o => o.stage === OpportunityStage.WON).length
+        }
+    }, [opportunities]);
+
+    return (
+         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+            <StatCard icon={<FiDollarSign className="w-6 h-6 text-white"/>} title="Active Deals" value={pipelineStats.totalOpps} colorClass="bg-indigo-500"/>
+            <StatCard icon={<FiTarget className="w-6 h-6 text-white"/>} title="Pipeline Value" value={`₹${pipelineStats.pipelineValue.toLocaleString('en-IN')}`} colorClass="bg-purple-500"/>
+            <StatCard icon={<FiTrendingUp className="w-6 h-6 text-white"/>} title="Forecasted Revenue" value={`₹${pipelineStats.forecastedValue.toLocaleString('en-IN', { maximumFractionDigits: 0 })}`} colorClass="bg-orange-500"/>
+            <StatCard icon={<FiCheckCircle className="w-6 h-6 text-white"/>} title="Deals Won" value={pipelineStats.dealsWon} colorClass="bg-green-500"/>
+        </div>
+    )
+}
 
 const ChartsWidget: React.FC<{ leads: Lead[] }> = ({ leads }) => {
     const priorityData = useMemo(() => {
@@ -139,19 +161,22 @@ const UpcomingFollowUps: React.FC<{ leads: Lead[] }> = ({ leads }) => {
 }
 
 const DEFAULT_WIDGETS: WidgetConfig[] = [
-    { id: 'stats', title: 'Statistics Cards', visible: true },
-    { id: 'charts', title: 'Charts Row', visible: true },
+    { id: 'stats', title: 'Lead Statistics', visible: true },
+    { id: 'pipelineStats', title: 'Pipeline Statistics', visible: true },
+    { id: 'charts', title: 'Lead Charts', visible: true },
     { id: 'followUps', title: 'Upcoming Follow-ups', visible: true },
 ];
 
 const widgetComponentMap = {
-    stats: StatsWidget,
-    charts: ChartsWidget,
-    followUps: UpcomingFollowUps,
+    stats: (props: any) => <StatsWidget leads={props.leads} />,
+    pipelineStats: (props: any) => <PipelineStatsWidget opportunities={props.opportunities} />,
+    charts: (props: any) => <ChartsWidget leads={props.leads} />,
+    followUps: (props: any) => <UpcomingFollowUps leads={props.leads} />,
 };
 
 const Dashboard: React.FC = () => {
     const { leads } = useLeads();
+    const { opportunities } = useOpportunities();
     const { user } = useUser();
     const [isSettingsOpen, setIsSettingsOpen] = useState(false);
 
@@ -162,6 +187,8 @@ const Dashboard: React.FC = () => {
                 const parsed = JSON.parse(saved);
                 const savedIds = new Set(parsed.map((w: WidgetConfig) => w.id));
                 const defaultIds = new Set(DEFAULT_WIDGETS.map(w => w.id));
+                // A simple check to see if the saved widgets match the default ones
+                // This prevents errors if we add/remove widgets in an update.
                 if (savedIds.size === defaultIds.size && [...savedIds].every(id => defaultIds.has(id as WidgetConfig['id']))) {
                     return parsed;
                 }
@@ -175,6 +202,11 @@ const Dashboard: React.FC = () => {
     useEffect(() => {
         localStorage.setItem('dashboardWidgets', JSON.stringify(widgets));
     }, [widgets]);
+
+    const componentProps = {
+        leads,
+        opportunities
+    };
 
     return (
         <>
@@ -193,7 +225,7 @@ const Dashboard: React.FC = () => {
 
                 {widgets.filter(w => w.visible).map(widget => {
                     const Component = widgetComponentMap[widget.id];
-                    return <Component key={widget.id} leads={leads} />;
+                    return <Component key={widget.id} {...componentProps} />;
                 })}
             </div>
             <DashboardSettingsModal

@@ -7,6 +7,7 @@ import { LeadsProvider } from './contexts/LeadsContext';
 import { ToastProvider } from './contexts/ToastContext';
 import { TasksProvider } from './contexts/TasksContext';
 import { AgentsProvider } from './contexts/AgentsContext';
+import { OpportunitiesProvider } from './contexts/OpportunitiesContext';
 
 const rootElement = document.getElementById('root');
 if (!rootElement) {
@@ -20,11 +21,13 @@ root.render(
       <UserProvider>
         <ToastProvider>
           <LeadsProvider>
-            <TasksProvider>
-              <AgentsProvider>
-                <App />
-              </AgentsProvider>
-            </TasksProvider>
+            <OpportunitiesProvider>
+              <TasksProvider>
+                <AgentsProvider>
+                  <App />
+                </AgentsProvider>
+              </TasksProvider>
+            </OpportunitiesProvider>
           </LeadsProvider>
         </ToastProvider>
       </UserProvider>

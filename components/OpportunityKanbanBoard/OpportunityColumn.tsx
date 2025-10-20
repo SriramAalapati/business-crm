@@ -2,61 +2,59 @@ import React from 'react';
 import { useDroppable } from '@dnd-kit/core';
 import { SortableContext, verticalListSortingStrategy, useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
-import LeadCard from './LeadCard';
-import { Lead } from '../../types';
+import OpportunityCard from './OpportunityCard';
+import { Opportunity } from '../../types';
 import { FiMove } from 'react-icons/fi';
 
 interface ColumnProps {
     id: string;
     title: string;
-    leads: Lead[];
-    activeLead: Lead | null;
+    opportunities: Opportunity[];
+    activeOpp: Opportunity | null;
 }
 
-// FIX: Changed the props definition to use an interface. This is cleaner and helps TypeScript resolve types correctly.
-interface SortableLeadItemProps {
-    lead: Lead;
+interface SortableOppItemProps {
+    opportunity: Opportunity;
 }
 
-// FIX: Explicitly typed the component with React.FC to correctly handle React-specific props like 'key'.
-const SortableLeadItem: React.FC<SortableLeadItemProps> = ({ lead }) => {
+const SortableOppItem: React.FC<SortableOppItemProps> = ({ opportunity }) => {
     const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ 
-        id: lead.id,
+        id: opportunity.id,
         data: {
-            type: 'Lead',
-            lead,
+            type: 'Opportunity',
+            opportunity,
         }
     });
     const style = {
         transform: CSS.Transform.toString(transform),
         transition,
     };
-    return <LeadCard ref={setNodeRef} style={style} isDragging={isDragging} lead={lead} {...attributes} {...listeners} />;
+    return <OpportunityCard ref={setNodeRef} style={style} isDragging={isDragging} opportunity={opportunity} {...attributes} {...listeners} />;
 };
 
 
-const Column: React.FC<ColumnProps> = ({ id, title, leads, activeLead }) => {
+const OpportunityColumn: React.FC<ColumnProps> = ({ id, title, opportunities, activeOpp }) => {
     const { setNodeRef } = useDroppable({ id });
 
-    const showDropZone = activeLead && activeLead.status !== id;
+    const showDropZone = activeOpp && activeOpp.stage !== id;
 
     return (
         <div className="flex flex-col w-80 min-w-[320px] bg-gray-100 dark:bg-gray-800 rounded-lg shadow-sm max-h-[calc(100vh-12rem)]">
             <div className="p-4 border-b border-gray-200 dark:border-gray-700 flex-shrink-0">
                 <h3 className="font-semibold text-gray-700 dark:text-gray-200">
-                    {title} <span className="text-sm text-gray-500">{leads.length}</span>
+                    {title} <span className="text-sm text-gray-500">{opportunities.length}</span>
                 </h3>
             </div>
             <div ref={setNodeRef} className="flex-1 p-2 space-y-2 overflow-y-auto relative">
-                <SortableContext items={leads.map(l => l.id)} strategy={verticalListSortingStrategy}>
-                    {leads.map(lead => (
-                        <SortableLeadItem key={lead.id} lead={lead} />
+                <SortableContext items={opportunities.map(o => o.id)} strategy={verticalListSortingStrategy}>
+                    {opportunities.map(opp => (
+                        <SortableOppItem key={opp.id} opportunity={opp} />
                     ))}
                 </SortableContext>
                 
-                {leads.length === 0 && !showDropZone && (
+                {opportunities.length === 0 && !showDropZone && (
                     <div className="flex items-center justify-center h-24 text-sm text-gray-400 rounded-lg border-2 border-dashed border-gray-300 dark:border-gray-600">
-                        Drag leads here
+                        Drag deals here
                     </div>
                 )}
 
@@ -71,4 +69,4 @@ const Column: React.FC<ColumnProps> = ({ id, title, leads, activeLead }) => {
     );
 };
 
-export default Column;
+export default OpportunityColumn;
