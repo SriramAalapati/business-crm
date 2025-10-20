@@ -1,4 +1,4 @@
-import React, { useState, useEffect, FormEvent } from 'react';
+import React, { useState, useEffect, FormEvent, useRef } from 'react';
 import { FiX, FiLoader } from 'react-icons/fi';
 import { Agent } from '../types';
 import { useAgents } from '../contexts/AgentsContext';
@@ -20,8 +20,26 @@ const AgentFormModal: React.FC<AgentFormModalProps> = ({ isOpen, onClose, agent 
   const { addAgent, editAgent } = useAgents();
   const [loading, setLoading] = useState(false);
   const [formData, setFormData] = useState(getInitialFormState());
+  const modalRef = useRef<HTMLDivElement>(null);
   
   const isEditMode = !!agent;
+
+  useEffect(() => {
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        onClose();
+      }
+    };
+
+    if (isOpen) {
+      document.addEventListener('keydown', handleKeyDown);
+      modalRef.current?.focus();
+    }
+
+    return () => {
+      document.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [isOpen, onClose]);
 
   useEffect(() => {
     if (isOpen) {
@@ -61,7 +79,7 @@ const AgentFormModal: React.FC<AgentFormModalProps> = ({ isOpen, onClose, agent 
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-60" onClick={onClose}>
-      <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl w-full max-w-lg m-4" onClick={e => e.stopPropagation()}>
+      <div ref={modalRef} tabIndex={-1} className="bg-white dark:bg-gray-800 rounded-lg shadow-xl w-full max-w-lg m-4 outline-none" onClick={e => e.stopPropagation()}>
         <form onSubmit={handleSubmit}>
           <div className="p-6 border-b dark:border-gray-700 flex items-center justify-between">
             <h2 className="text-xl font-semibold text-gray-900 dark:text-white">{isEditMode ? 'Edit Agent' : 'Add New Agent'}</h2>

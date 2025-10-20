@@ -1,4 +1,4 @@
-import React, { useState, useEffect, FormEvent, useCallback } from 'react';
+import React, { useState, useEffect, FormEvent, useCallback, useRef } from 'react';
 import { FiX, FiLoader } from 'react-icons/fi';
 import { useTasks } from '../contexts/TasksContext';
 import { useUser } from '../contexts/UserContext';
@@ -17,6 +17,7 @@ const TaskFormModal: React.FC<TaskFormModalProps> = ({ isOpen, onClose, task }) 
   const { addTask, editTask } = useTasks();
   const { user } = useUser();
   const [loading, setLoading] = useState(false);
+  const modalRef = useRef<HTMLDivElement>(null);
 
   const getInitialFormState = useCallback(() => {
     const now = new Date();
@@ -34,6 +35,23 @@ const TaskFormModal: React.FC<TaskFormModalProps> = ({ isOpen, onClose, task }) 
   const [formData, setFormData] = useState(getInitialFormState());
   
   const isEditMode = !!task;
+
+  useEffect(() => {
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        onClose();
+      }
+    };
+
+    if (isOpen) {
+      document.addEventListener('keydown', handleKeyDown);
+      modalRef.current?.focus();
+    }
+
+    return () => {
+      document.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [isOpen, onClose]);
 
   useEffect(() => {
     if (isOpen) {
@@ -83,7 +101,7 @@ const TaskFormModal: React.FC<TaskFormModalProps> = ({ isOpen, onClose, task }) 
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-60" onClick={onClose}>
-      <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl w-full max-w-lg m-4" onClick={e => e.stopPropagation()}>
+      <div ref={modalRef} tabIndex={-1} className="bg-white dark:bg-gray-800 rounded-lg shadow-xl w-full max-w-lg m-4 outline-none" onClick={e => e.stopPropagation()}>
         <form onSubmit={handleSubmit}>
           <div className="p-6 border-b dark:border-gray-700 flex items-center justify-between">
             <h2 className="text-xl font-semibold text-gray-900 dark:text-white">{isEditMode ? 'Edit Task' : 'Add New Task'}</h2>

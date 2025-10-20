@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { FiX, FiUser, FiBriefcase, FiFlag, FiDollarSign, FiCalendar, FiEdit3, FiGitCommit, FiPlusCircle, FiCheckCircle, FiSend, FiEdit2, FiCheck, FiLoader } from 'react-icons/fi';
 import { Lead, LeadActivity, Priority, LeadStatus } from '../types';
 import { useLeads } from '../contexts/LeadsContext';
@@ -100,6 +100,24 @@ const ViewLeadModal: React.FC<ViewLeadModalProps> = ({ isOpen, onClose, lead }) 
   const { addNoteToLead } = useLeads();
   const [newNote, setNewNote] = useState('');
   const [isAddingNote, setIsAddingNote] = useState(false);
+  const modalRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        onClose();
+      }
+    };
+
+    if (isOpen) {
+      document.addEventListener('keydown', handleKeyDown);
+      modalRef.current?.focus();
+    }
+
+    return () => {
+      document.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [isOpen, onClose]);
 
   if (!isOpen) return null;
 
@@ -124,7 +142,7 @@ const ViewLeadModal: React.FC<ViewLeadModalProps> = ({ isOpen, onClose, lead }) 
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-60" onClick={onClose}>
-      <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl w-full max-w-4xl m-4 transform transition-all max-h-[90vh] flex flex-col" onClick={e => e.stopPropagation()}>
+      <div ref={modalRef} tabIndex={-1} className="bg-white dark:bg-gray-800 rounded-lg shadow-xl w-full max-w-4xl m-4 transform transition-all max-h-[90vh] flex flex-col outline-none" onClick={e => e.stopPropagation()}>
         <div className="p-6 border-b dark:border-gray-700 flex items-start justify-between">
             <div>
                 <h2 className="text-2xl font-bold text-gray-900 dark:text-white">{lead.name}</h2>

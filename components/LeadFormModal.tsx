@@ -1,4 +1,4 @@
-import React, { useState, useEffect, FormEvent } from 'react';
+import React, { useState, useEffect, FormEvent, useRef } from 'react';
 import { FiX, FiLoader } from 'react-icons/fi';
 import { useLeads } from '../contexts/LeadsContext';
 import { Lead, LeadStatus, Priority, LeadSource } from '../types';
@@ -30,8 +30,26 @@ const LeadFormModal: React.FC<LeadFormModalProps> = ({ isOpen, onClose, lead }) 
   const { addLead, editLead } = useLeads();
   const [loading, setLoading] = useState(false);
   const [formData, setFormData] = useState(getInitialFormState());
+  const modalRef = useRef<HTMLDivElement>(null);
   
   const isEditMode = !!lead;
+
+  useEffect(() => {
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        onClose();
+      }
+    };
+
+    if (isOpen) {
+      document.addEventListener('keydown', handleKeyDown);
+      modalRef.current?.focus();
+    }
+
+    return () => {
+      document.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [isOpen, onClose]);
 
   useEffect(() => {
     if (isOpen) {
@@ -95,7 +113,7 @@ const LeadFormModal: React.FC<LeadFormModalProps> = ({ isOpen, onClose, lead }) 
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-60" onClick={onClose}>
-      <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl w-full max-w-2xl m-4 transform transition-all max-h-[90vh] flex flex-col" onClick={e => e.stopPropagation()}>
+      <div ref={modalRef} tabIndex={-1} className="bg-white dark:bg-gray-800 rounded-lg shadow-xl w-full max-w-2xl m-4 transform transition-all max-h-[90vh] flex flex-col outline-none" onClick={e => e.stopPropagation()}>
         <form onSubmit={handleSubmit} className="flex flex-col h-full">
           <div className="p-6 border-b dark:border-gray-700">
             <div className="flex items-start justify-between">

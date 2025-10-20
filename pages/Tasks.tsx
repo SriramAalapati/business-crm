@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { useTasks } from '../contexts/TasksContext';
 import { Task, TaskStatus, Priority } from '../types';
 import { FiPlus, FiEdit, FiTrash2, FiFlag } from 'react-icons/fi';
@@ -15,6 +15,65 @@ const statusClasses: Record<TaskStatus, { text: string, bg: string }> = {
     [TaskStatus.TODO]: { text: 'text-gray-800 dark:text-gray-200', bg: 'bg-gray-100 dark:bg-gray-600' },
     [TaskStatus.IN_PROGRESS]: { text: 'text-blue-800 dark:text-blue-200', bg: 'bg-blue-100 dark:bg-blue-900/50' },
     [TaskStatus.DONE]: { text: 'text-green-800 dark:text-green-200', bg: 'bg-green-100 dark:bg-green-900/50' },
+};
+
+const EditableTaskStatus: React.FC<{ task: Task }> = ({ task }) => {
+  const { updateTaskStatus } = useTasks();
+  const [isEditing, setIsEditing] = useState(false);
+  const selectRef = useRef<HTMLSelectElement>(null);
+
+  const handleSave = (newStatus: TaskStatus) => {
+    setIsEditing(false);
+    if (newStatus !== task.status) {
+      updateTaskStatus(task.id, newStatus);
+    }
+  };
+
+  useEffect(() => {
+    if (isEditing) {
+      selectRef.current?.focus();
+    }
+  }, [isEditing]);
+
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLSelectElement>) => {
+    if (e.key === 'Enter') {
+      handleSave(e.currentTarget.value as TaskStatus);
+    } else if (e.key === 'Escape') {
+      setIsEditing(false);
+    }
+  };
+
+  if (isEditing) {
+    return (
+      <select
+        ref={selectRef}
+        defaultValue={task.status}
+        onBlur={(e) => handleSave(e.target.value as TaskStatus)}
+        onKeyDown={handleKeyDown}
+        className="block p-1 text-xs text-gray-900 border border-gray-300 rounded-lg bg-gray-50 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500"
+        onClick={(e) => e.stopPropagation()}
+      >
+        {Object.values(TaskStatus).map((s) => (
+          <option key={s} value={s}>
+            {s}
+          </option>
+        ))}
+      </select>
+    );
+  }
+
+  return (
+    <span
+      onClick={(e) => { e.stopPropagation(); setIsEditing(true); }}
+      className={`cursor-pointer px-2 py-1 text-xs font-semibold rounded-full ${
+        statusClasses[task.status].bg
+      } ${statusClasses[task.status].text}`}
+      tabIndex={0}
+      onKeyDown={(e) => { if(e.key === 'Enter') { e.stopPropagation(); setIsEditing(true); } }}
+    >
+      {task.status}
+    </span>
+  );
 };
 
 const TaskTableSkeleton: React.FC = () => (
@@ -119,9 +178,7 @@ const Tasks: React.FC = () => {
                                             </span>
                                         </td>
                                         <td className="px-6 py-4">
-                                            <span className={`px-2 py-1 text-xs font-semibold rounded-full ${statusClasses[task.status].bg} ${statusClasses[task.status].text}`}>
-                                                {task.status}
-                                            </span>
+                                           <EditableTaskStatus task={task} />
                                         </td>
                                         <td className="px-6 py-4">
                                             {task.notes ? (

@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import KanbanBoard from '../components/KanbanBoard/KanbanBoard';
 import ConfirmationDialog from '../components/ConfirmationDialog';
 import LeadFormModal from '../components/LeadFormModal';
@@ -51,6 +51,27 @@ const Leads: React.FC = () => {
     } = useLeads();
     const { user } = useUser();
     
+    useEffect(() => {
+      const handleKeyDown = (event: KeyboardEvent) => {
+        if (event.key.toLowerCase() === 'c') {
+          if (
+            (event.target as HTMLElement).tagName !== 'INPUT' &&
+            (event.target as HTMLElement).tagName !== 'TEXTAREA' &&
+            (event.target as HTMLElement).tagName !== 'SELECT' &&
+            !isModalOpen && !isViewModalOpen && !leadToDelete
+          ) {
+            event.preventDefault();
+            openModal();
+          }
+        }
+      };
+  
+      window.addEventListener('keydown', handleKeyDown);
+      return () => {
+        window.removeEventListener('keydown', handleKeyDown);
+      };
+    }, [isModalOpen, isViewModalOpen, leadToDelete, openModal]);
+
     const leadBeingDeleted = leads.find(l => l.id === leadToDelete);
 
     const handleConfirmDelete = async () => {

@@ -15,6 +15,7 @@ const TopBar: React.FC = () => {
   
   const menuRef = useRef<HTMLDivElement>(null);
   const searchContainerRef = useRef<HTMLDivElement>(null);
+  const searchInputRef = useRef<HTMLInputElement>(null);
 
   const location = useLocation();
 
@@ -36,6 +37,28 @@ const TopBar: React.FC = () => {
     }
   }, [location.pathname, setSearchTerm]);
 
+  useEffect(() => {
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === '/') {
+        if (
+          (event.target as HTMLElement).tagName !== 'INPUT' &&
+          (event.target as HTMLElement).tagName !== 'TEXTAREA' &&
+          (event.target as HTMLElement).tagName !== 'SELECT'
+        ) {
+          event.preventDefault();
+          if (location.pathname === '/leads') {
+            searchInputRef.current?.focus();
+            setSearchFocused(true);
+          }
+        }
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [location.pathname]);
+
   const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
       setLocalSearch(e.target.value);
   }
@@ -51,6 +74,7 @@ const TopBar: React.FC = () => {
     };
     document.addEventListener('mousedown', handleClickOutside);
     return () => {
+      // FIX: Corrected the event handler name in the cleanup function.
       document.removeEventListener('mousedown', handleClickOutside);
     };
   }, []);
@@ -74,6 +98,7 @@ const TopBar: React.FC = () => {
             <div className="relative">
                 <FiSearch className="absolute w-5 h-5 text-gray-400 top-1/2 left-3 -translate-y-1/2" />
                 <input
+                  ref={searchInputRef}
                   type="text"
                   placeholder="Search leads..."
                   value={localSearch}

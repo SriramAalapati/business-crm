@@ -13,7 +13,12 @@ interface ColumnProps {
     activeLead: Lead | null;
 }
 
-const SortableLeadItem = ({ lead }: { lead: Lead }) => {
+// FIX: Changed the props definition to use an interface. This is cleaner and helps TypeScript resolve types correctly.
+interface SortableLeadItemProps {
+    lead: Lead;
+}
+
+const SortableLeadItem = ({ lead }: SortableLeadItemProps) => {
     const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ 
         id: lead.id,
         data: {

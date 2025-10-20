@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect, useRef } from 'react';
 import { FiX, FiMenu } from 'react-icons/fi';
 import { DndContext, closestCenter, KeyboardSensor, PointerSensor, useSensor, useSensors, DragEndEvent } from '@dnd-kit/core';
 import { arrayMove, SortableContext, sortableKeyboardCoordinates, useSortable, verticalListSortingStrategy } from '@dnd-kit/sortable';
@@ -43,6 +43,24 @@ interface DashboardSettingsModalProps {
 
 const DashboardSettingsModal: React.FC<DashboardSettingsModalProps> = ({ isOpen, onClose, widgets, setWidgets }) => {
     const sensors = useSensors(useSensor(PointerSensor), useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates }));
+    const modalRef = useRef<HTMLDivElement>(null);
+    
+    useEffect(() => {
+      const handleKeyDown = (event: KeyboardEvent) => {
+        if (event.key === 'Escape') {
+          onClose();
+        }
+      };
+  
+      if (isOpen) {
+        document.addEventListener('keydown', handleKeyDown);
+        modalRef.current?.focus();
+      }
+  
+      return () => {
+        document.removeEventListener('keydown', handleKeyDown);
+      };
+    }, [isOpen, onClose]);
     
     if (!isOpen) return null;
     
@@ -61,7 +79,7 @@ const DashboardSettingsModal: React.FC<DashboardSettingsModalProps> = ({ isOpen,
 
     return (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-60" onClick={onClose}>
-            <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl w-full max-w-lg m-4" onClick={e => e.stopPropagation()}>
+            <div ref={modalRef} tabIndex={-1} className="bg-white dark:bg-gray-800 rounded-lg shadow-xl w-full max-w-lg m-4 outline-none" onClick={e => e.stopPropagation()}>
                 <div className="p-6 border-b dark:border-gray-700 flex items-center justify-between">
                     <h2 className="text-xl font-semibold text-gray-900 dark:text-white">Customize Dashboard</h2>
                     <button onClick={onClose} className="p-1 rounded-full text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700" aria-label="Close settings"><FiX className="w-5 h-5" /></button>
