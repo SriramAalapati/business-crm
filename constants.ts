@@ -21,16 +21,16 @@ export const OPPORTUNITY_STAGES_CONFIG: { id: OpportunityStage, title: string, p
 const ADMIN_USER: User = { 
   id: 'admin-1', 
   name: 'Admin', 
-  email: 'admin@geminicrm.com', 
+  email: 'admin@businesscrm.com', 
   avatar: 'https://i.pravatar.cc/150?u=Admin', 
   role: 'admin' 
 };
 
 export const INITIAL_AGENTS: Agent[] = [
-  { id: 'agent-1', name: 'Alice', email: 'alice@geminicrm.com', avatar: 'https://i.pravatar.cc/150?u=Alice', role: 'Sales Executive' },
-  { id: 'agent-2', name: 'Bob', email: 'bob@geminicrm.com', avatar: 'https://i.pravatar.cc/150?u=Bob', role: 'Sales Executive' },
-  { id: 'agent-3', name: 'Charlie', email: 'charlie@geminicrm.com', avatar: 'https://i.pravatar.cc/150?u=Charlie', role: 'Senior Sales Executive' },
-  { id: 'agent-4', name: 'Diana', email: 'diana@geminicrm.com', avatar: 'https://i.pravatar.cc/150?u=Diana', role: 'Sales Associate' },
+  { id: 'agent-1', name: 'Alice', email: 'alice@businesscrm.com', avatar: 'https://i.pravatar.cc/150?u=Alice', role: 'Sales Executive' },
+  { id: 'agent-2', name: 'Bob', email: 'bob@businesscrm.com', avatar: 'https://i.pravatar.cc/150?u=Bob', role: 'Sales Executive' },
+  { id: 'agent-3', name: 'Charlie', email: 'charlie@businesscrm.com', avatar: 'https://i.pravatar.cc/150?u=Charlie', role: 'Senior Sales Executive' },
+  { id: 'agent-4', name: 'Diana', email: 'diana@businesscrm.com', avatar: 'https://i.pravatar.cc/150?u=Diana', role: 'Sales Associate' },
 ];
 
 export const ALL_USERS: User[] = [

@@ -96,8 +96,8 @@ const Login: React.FC = () => {
                 <div className="mt-6 p-4 bg-primary-50 dark:bg-gray-800/50 border border-primary-200 dark:border-gray-700 rounded-lg text-sm">
                     <h3 className="font-bold text-primary-800 dark:text-primary-200 mb-2">Demo Credentials</h3>
                     <div className="space-y-2 text-gray-700 dark:text-gray-300">
-                        <p><strong>Admin:</strong> admin@geminicrm.com</p>
-                        <p><strong>Agent:</strong> alice@geminicrm.com</p>
+                        <p><strong>Admin:</strong> admin@businesscrm.com</p>
+                        <p><strong>Agent:</strong> alice@businesscrm.com</p>
                         <p className="italic text-xs mt-1"> (Password can be anything)</p>
                     </div>
                 </div>

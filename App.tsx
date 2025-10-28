@@ -12,7 +12,7 @@ import Reports from './pages/Reports';
 import Tasks from './pages/Tasks';
 import Opportunities from './pages/Opportunities';
 import { FiLoader } from 'react-icons/fi';
-
+import './app.css';
 const App: React.FC = () => {
   const { user, verifyUser, loading } = useUser();
   

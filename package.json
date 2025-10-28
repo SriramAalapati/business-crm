@@ -1,5 +1,5 @@
 {
-  "name": "gemini-crm-pro",
+  "name": "business-crm",
   "private": true,
   "version": "0.0.0",
   "type": "module",
@@ -9,23 +9,26 @@
     "preview": "vite preview"
   },
   "dependencies": {
-    "recharts": "^3.3.0",
-    "react-router-dom": "^7.9.4",
-    "react": "^19.2.0",
-    "react-dom": "^19.2.0",
-    "@dnd-kit/utilities": "^3.2.2",
+    "@dnd-kit/core": "^6.3.1",
     "@dnd-kit/sortable": "^10.0.0",
-    "@fullcalendar/react": "^6.1.19",
+    "@dnd-kit/utilities": "^3.2.2",
+    "@fullcalendar/core": "^6.1.19",
     "@fullcalendar/daygrid": "^6.1.19",
     "@fullcalendar/interaction": "^6.1.19",
-    "@fullcalendar/timegrid": "^6.1.19",
     "@fullcalendar/list": "^6.1.19",
+    "@fullcalendar/react": "^6.1.19",
+    "@fullcalendar/timegrid": "^6.1.19",
+    "@tailwindcss/vite": "^4.1.16",
+    "react": "^19.2.0",
+    "react-dom": "^19.2.0",
     "react-icons": "^5.5.0",
-    "@dnd-kit/core": "^6.3.1",
-    "@fullcalendar/core": "^6.1.19"
+    "react-router-dom": "^7.9.4",
+    "recharts": "^3.3.0",
+    "tailwindcss": "^4.1.16"
   },
   "devDependencies": {
     "@types/node": "^22.14.0",
+    "@types/react": "^19.2.2",
     "@vitejs/plugin-react": "^5.0.0",
     "typescript": "~5.8.2",
     "vite": "^6.2.0"
